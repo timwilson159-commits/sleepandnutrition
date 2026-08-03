@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fuel &amp; Recharge | Sleep and Nutrition Workshop</title>
+<meta name="description" content="A 60 minute interactive workshop on sleep and nutrition for Year 10 students.">
+<style>
+:root{
+  --bg:#0a0b16;
+  --bg2:#12142a;
+  --panel:rgba(255,255,255,.055);
+  --panel2:rgba(255,255,255,.09);
+  --line:rgba(255,255,255,.14);
+  --ink:#f2f2fa;
+  --muted:#a3a4c2;
+  --sleep:#8b7bff;
+  --sleep2:#c3b8ff;
+  --fuel:#ffb020;
+  --fuel2:#ffd784;
+  --good:#3ddc97;
+  --bad:#ff5c7a;
+  --warn:#ffcf5c;
+  --radius:20px;
+  --shadow:0 20px 60px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(900px 700px at 12% -10%, rgba(139,123,255,.28), transparent 60%),
+    radial-gradient(900px 700px at 92% 8%, rgba(255,176,32,.16), transparent 60%),
+    radial-gradient(1000px 800px at 50% 115%, rgba(61,220,151,.12), transparent 60%),
+    linear-gradient(180deg,#0a0b16,#111330 60%,#0a0b16);
+}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+:focus-visible{outline:3px solid var(--sleep2);outline-offset:3px;border-radius:8px}
+
+/* ============ SHELL ============ */
+#app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+
+.hud{
+  display:flex;align-items:center;gap:14px;
+  padding:10px clamp(14px,2.2vw,30px);
+  border-bottom:1px solid var(--line);
+  background:rgba(8,9,20,.55);backdrop-filter:blur(14px);
+  flex:0 0 auto;
+}
+.brand{display:flex;align-items:baseline;gap:10px;font-weight:800;letter-spacing:-.02em}
+.brand b{font-size:clamp(14px,1.35vw,20px)}
+.brand span{font-size:clamp(10px,.85vw,13px);color:var(--muted);font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.hud-spacer{flex:1}
+.chip{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:7px 13px;border-radius:999px;border:1px solid var(--line);
+  background:var(--panel);font-size:clamp(11px,1vw,15px);font-weight:700;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.chip small{font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-size:.7em}
+.chip.timer{min-width:132px;justify-content:center}
+.chip.timer.run{border-color:rgba(61,220,151,.55);background:rgba(61,220,151,.13);color:#bff5de}
+.chip.timer.low{border-color:rgba(255,207,92,.6);background:rgba(255,207,92,.14);color:#ffe6a8}
+.chip.timer.done{border-color:rgba(255,92,122,.65);background:rgba(255,92,122,.16);color:#ffc2ce;animation:pulse 1.1s infinite}
+@keyframes pulse{50%{opacity:.42}}
+.chip.btn:hover{background:var(--panel2)}
+.phase{
+  padding:7px 15px;border-radius:999px;font-weight:800;font-size:clamp(11px,1vw,14px);
+  letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;
+}
+.phase[data-p="sleep"]{background:rgba(139,123,255,.18);border-color:rgba(139,123,255,.5);color:var(--sleep2)}
+.phase[data-p="fuel"]{background:rgba(255,176,32,.16);border-color:rgba(255,176,32,.5);color:var(--fuel2)}
+.phase[data-p="both"]{background:rgba(61,220,151,.15);border-color:rgba(61,220,151,.5);color:#9df0cd}
+.phase[data-p="intro"]{background:var(--panel);border-color:var(--line);color:var(--muted)}
+
+#progress{height:3px;background:rgba(255,255,255,.08);flex:0 0 auto}
+#progressBar{height:100%;width:0;background:linear-gradient(90deg,var(--sleep),var(--fuel));transition:width .4s cubic-bezier(.2,.8,.2,1)}
+
+#deck{position:relative;flex:1;min-height:0;overflow:hidden}
+.slide{
+  position:absolute;inset:0;
+  padding:clamp(16px,2.4vh,34px) clamp(18px,3.2vw,60px);
+  display:none;flex-direction:column;gap:clamp(10px,1.6vh,20px);
+  overflow-y:auto;overflow-x:hidden;
+}
+.slide.active{display:flex;animation:slideIn .42s cubic-bezier(.2,.8,.2,1)}
+@keyframes slideIn{from{opacity:0;transform:translateY(18px) scale(.995)}to{opacity:1;transform:none}}
+.slide::-webkit-scrollbar{width:10px}
+.slide::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:10px}
+
+.navbar{
+  flex:0 0 auto;display:flex;align-items:center;gap:12px;
+  padding:9px clamp(14px,2.2vw,30px);
+  border-top:1px solid var(--line);background:rgba(8,9,20,.55);backdrop-filter:blur(14px);
+}
+.navbtn{
+  padding:9px 20px;border-radius:12px;border:1px solid var(--line);background:var(--panel);
+  font-weight:700;font-size:clamp(12px,1.05vw,15px);transition:.16s;
+}
+.navbtn:hover{background:var(--panel2);transform:translateY(-1px)}
+.navbtn:disabled{opacity:.3;cursor:default;transform:none}
+.navbtn.primary{background:linear-gradient(135deg,var(--sleep),#6d5ce0);border-color:transparent}
+.keys{flex:1;text-align:center;color:var(--muted);font-size:clamp(10px,.85vw,13px)}
+.keys kbd{
+  display:inline-block;padding:2px 7px;margin:0 1px;border-radius:6px;
+  background:var(--panel2);border:1px solid var(--line);font-family:inherit;font-size:.92em;font-weight:700;color:var(--ink)
+}
+
+/* ============ TYPE ============ */
+.eyebrow{
+  font-size:clamp(11px,1.05vw,15px);font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)
+}
+h1{font-size:clamp(30px,4.6vw,66px);line-height:1.03;letter-spacing:-.03em;font-weight:850}
+h2{font-size:clamp(24px,3.1vw,46px);line-height:1.08;letter-spacing:-.025em;font-weight:820}
+h3{font-size:clamp(17px,1.75vw,26px);line-height:1.2;letter-spacing:-.015em;font-weight:800}
+p,li{font-size:clamp(14px,1.32vw,21px);line-height:1.5;color:#dedff0}
+.lede{font-size:clamp(16px,1.6vw,26px);color:#e8e8f6;max-width:62ch}
+.muted{color:var(--muted)}
+.hl{color:var(--fuel2);font-weight:800}
+.hl-s{color:var(--sleep2);font-weight:800}
+.hl-g{color:var(--good);font-weight:800}
+.src{font-size:clamp(10px,.82vw,13px);color:#7b7c99;line-height:1.45}
+.slide-head{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;flex:0 0 auto}
+.slide-head .grow{flex:1;min-width:260px}
+.tag{
+  display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;
+  background:var(--panel);border:1px solid var(--line);font-size:clamp(10px,.9vw,13px);
+  font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)
+}
+.tag.do{background:rgba(61,220,151,.14);border-color:rgba(61,220,151,.45);color:#9df0cd}
+
+/* ============ LAYOUT ============ */
+.body-area{flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(10px,1.6vh,20px)}
+.cols{display:grid;gap:clamp(12px,1.5vw,24px)}
+.c2{grid-template-columns:repeat(2,1fr)}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+.c-2-1{grid-template-columns:1.55fr 1fr}
+.c-1-2{grid-template-columns:1fr 1.55fr}
+@media(max-width:900px){.c2,.c3,.c4,.c-2-1,.c-1-2{grid-template-columns:1fr}}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:clamp(13px,1.5vw,24px);
+}
+.card.glow{box-shadow:var(--shadow)}
+.card h3{margin-bottom:8px}
+.stack{display:flex;flex-direction:column;gap:clamp(8px,1.2vh,16px)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+/* ============ BIG STAT ============ */
+.stat{text-align:center;padding:clamp(12px,1.6vw,24px)}
+.stat .num{
+  font-size:clamp(34px,5.2vw,76px);font-weight:880;line-height:1;letter-spacing:-.04em;
+  background:linear-gradient(135deg,var(--fuel2),var(--fuel));-webkit-background-clip:text;background-clip:text;color:transparent
+}
+.stat.s .num{background:linear-gradient(135deg,var(--sleep2),var(--sleep));-webkit-background-clip:text;background-clip:text}
+.stat.g .num{background:linear-gradient(135deg,#9df0cd,var(--good));-webkit-background-clip:text;background-clip:text}
+.stat .lbl{margin-top:7px;font-size:clamp(12px,1.15vw,17px);color:#d3d4e8;line-height:1.35;font-weight:600}
+
+/* ============ REVEAL ============ */
+.reveal{opacity:0;transform:translateY(14px);transition:.5s cubic-bezier(.2,.8,.2,1)}
+.reveal.on{opacity:1;transform:none}
+
+/* ============ MYTH BUSTER ============ */
+.myth{
+  border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);
+  padding:clamp(12px,1.5vw,22px);cursor:pointer;transition:.22s;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;gap:9px;
+}
+.myth:hover{background:var(--panel2);transform:translateY(-3px)}
+.myth .qn{font-size:clamp(11px,.95vw,14px);font-weight:800;letter-spacing:.16em;color:var(--muted);text-transform:uppercase}
+.myth .claim{font-size:clamp(14px,1.4vw,22px);font-weight:750;line-height:1.28}
+.myth .verdict{display:none;gap:10px;flex-direction:column;animation:slideIn .34s}
+.myth.open .verdict{display:flex}
+.myth.open{background:var(--panel2)}
+.badge{
+  align-self:flex-start;padding:5px 14px;border-radius:999px;font-weight:850;
+  font-size:clamp(11px,1.05vw,16px);letter-spacing:.06em;text-transform:uppercase
+}
+.badge.t{background:rgba(61,220,151,.2);color:#9df0cd;border:1px solid rgba(61,220,151,.5)}
+.badge.f{background:rgba(255,92,122,.18);color:#ffb3c1;border:1px solid rgba(255,92,122,.5)}
+.myth .why{font-size:clamp(12px,1.12vw,17px);color:#d8d9ec;line-height:1.45}
+.myth.open{border-color:rgba(255,255,255,.3)}
+.tapme{position:absolute;top:12px;right:14px;font-size:11px;color:#6e6f8d;font-weight:700;letter-spacing:.1em}
+.myth.open .tapme{display:none}
+
+/* ============ HYPNOGRAM ============ */
+.stagebtn{
+  padding:9px 15px;border-radius:12px;border:1px solid var(--line);background:var(--panel);
+  font-weight:750;font-size:clamp(11px,1.05vw,16px);transition:.16s;text-align:left
+}
+.stagebtn:hover{background:var(--panel2)}
+.stagebtn.sel{border-color:var(--sleep);background:rgba(139,123,255,.2);color:#fff}
+.dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:8px;vertical-align:-1px}
+
+/* ============ CASE CARDS ============ */
+.case{
+  border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);
+  padding:clamp(12px,1.4vw,20px);cursor:pointer;transition:.22s;display:flex;flex-direction:column;gap:9px;position:relative
+}
+.case:hover{transform:translateY(-3px);background:var(--panel2)}
+.case .who{font-size:clamp(15px,1.5vw,23px);font-weight:820;letter-spacing:-.01em}
+.case .facts{font-size:clamp(12px,1.1vw,17px);color:#d5d6ea;line-height:1.45}
+.case .facts b{color:var(--fuel2)}
+.case .dx{display:none;border-top:1px solid var(--line);padding-top:10px;animation:slideIn .32s;gap:7px;flex-direction:column}
+.case.open .dx{display:flex}
+.case .dxh{font-weight:850;color:var(--good);font-size:clamp(12px,1.15vw,18px)}
+.case .fix{font-size:clamp(12px,1.08vw,17px);color:#d8d9ec;line-height:1.45}
+.case .fix b{color:var(--sleep2)}
+
+/* ============ SLIDERS ============ */
+.slider-wrap{display:flex;flex-direction:column;gap:7px}
+.slider-wrap label{font-weight:750;font-size:clamp(12px,1.1vw,17px);display:flex;justify-content:space-between;gap:12px}
+.slider-wrap label span{color:var(--fuel2);font-variant-numeric:tabular-nums}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:10px;border-radius:999px;
+  background:rgba(255,255,255,.14);outline:none;cursor:pointer
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--sleep2),var(--sleep));border:3px solid #0a0b16;
+  box-shadow:0 3px 12px rgba(0,0,0,.5);cursor:grab
+}
+input[type=range]::-moz-range-thumb{
+  width:26px;height:26px;border-radius:50%;background:var(--sleep);border:3px solid #0a0b16;cursor:grab
+}
+
+/* Dense slides: shrink the furniture so everything fits one projector screen */
+.slide.tight .card{padding:clamp(10px,1.1vw,17px)}
+.slide.tight .body-area{gap:clamp(8px,1.1vh,14px)}
+.slide.tight .stack{gap:clamp(7px,1vh,12px)}
+.slide.tight .cols{gap:clamp(8px,1vw,14px)}
+.slide.tight .stat{padding:clamp(8px,1vw,14px)}
+.slide.tight .stat .num{font-size:clamp(24px,3vw,42px)}
+.slide.tight .stat .lbl{margin-top:4px;font-size:clamp(10px,.92vw,14px)}
+.slide.tight .pill{padding:8px 11px}
+.slide.tight .pill .ic{width:26px;height:26px;font-size:13px}
+.slide.tight .slider-wrap{gap:4px}
+.slide.tight input[type=range]{height:8px}
+.slide.tight input[type=range]::-webkit-slider-thumb{width:22px;height:22px}
+.slide.tight .talkbox{padding:9px 13px}
+.slide.tight h3{font-size:clamp(15px,1.5vw,22px)}
+.slide.tight .pill .tx{font-size:clamp(11px,1.02vw,16px)}
+.slide.tight .meter{gap:3px}
+.slide.tight .mbar{height:10px}
+.slide.tight .tile{padding:8px 10px}
+
+/* ============ NIGHT BAR ============ */
+.nightbar{
+  display:flex;height:clamp(38px,5.2vh,52px);border-radius:13px;overflow:hidden;
+  border:1px solid var(--line);background:rgba(255,255,255,.05)
+}
+.nbseg{
+  display:grid;place-items:center;min-width:0;overflow:hidden;white-space:nowrap;padding:0 5px;
+  font-size:clamp(10px,.92vw,14px);font-weight:850;transition:flex-grow .55s cubic-bezier(.2,.8,.2,1)
+}
+.nbseg.phone{background:linear-gradient(180deg,#ffcd6b,#ffb020);color:#2b1c00}
+.nbseg.awake{background:linear-gradient(180deg,#7a6fd0,#584ea4);color:#efeaff}
+.nbseg.sleep{background:linear-gradient(180deg,#57e6ad,#2fbe80);color:#04301f}
+.nbticks{display:flex;justify-content:space-between;font-size:clamp(10px,.88vw,13px);color:#8b8ca8;font-weight:750}
+.nbkey{display:flex;gap:14px;flex-wrap:wrap;font-size:clamp(10px,.9vw,13.5px);font-weight:700;color:#c9cae0}
+.nbkey span{display:inline-flex;align-items:center;gap:6px}
+.nbkey i{width:13px;height:13px;border-radius:4px;display:block}
+
+/* ============ BAR METERS ============ */
+.meter{display:flex;flex-direction:column;gap:5px}
+.meter .mh{display:flex;justify-content:space-between;font-size:clamp(11px,1.02vw,16px);font-weight:750}
+.meter .mh span{color:var(--muted);font-variant-numeric:tabular-nums}
+.mbar{height:12px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}
+.mfill{height:100%;border-radius:999px;width:0;transition:width .7s cubic-bezier(.2,.8,.2,1);background:linear-gradient(90deg,var(--good),#7ef0c0)}
+.mfill.low{background:linear-gradient(90deg,var(--bad),#ff92a8)}
+.mfill.mid{background:linear-gradient(90deg,var(--warn),#ffe29a)}
+
+/* ============ CHOICE TILES ============ */
+.tiles{display:grid;gap:10px}
+.tile{
+  border:1px solid var(--line);border-radius:14px;background:var(--panel);
+  padding:11px 13px;transition:.16s;text-align:left;display:flex;flex-direction:column;gap:4px;position:relative
+}
+.tile:hover{background:var(--panel2);transform:translateY(-2px)}
+.tile.sel{border-color:var(--fuel);background:rgba(255,176,32,.16);box-shadow:0 0 0 1px var(--fuel) inset}
+.tile .tn{font-weight:750;font-size:clamp(12px,1.08vw,17px);line-height:1.25}
+.tile .tm{font-size:clamp(10px,.88vw,13px);color:var(--muted);line-height:1.3}
+.tile .pick{position:absolute;top:8px;right:10px;color:var(--fuel);font-weight:850;display:none}
+.tile.sel .pick{display:block}
+
+/* ============ WIND DOWN BUILDER ============ */
+.timeline{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+.slot{
+  min-height:clamp(88px,12vh,132px);border:2px dashed var(--line);border-radius:16px;
+  background:rgba(255,255,255,.03);padding:9px;display:flex;flex-direction:column;gap:5px;
+  align-items:center;justify-content:center;text-align:center;transition:.18s;cursor:pointer
+}
+.slot:hover{border-color:var(--sleep);background:rgba(139,123,255,.1)}
+.slot.armed{border-color:var(--sleep);background:rgba(139,123,255,.16);animation:pulse 1.2s infinite}
+.slot .st{font-size:clamp(10px,.9vw,13px);font-weight:800;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.slot .sv{font-size:clamp(11px,1.02vw,16px);font-weight:750;line-height:1.25}
+.slot.filled{border-style:solid;background:var(--panel2)}
+.slot.filled.good{border-color:rgba(61,220,151,.65);background:rgba(61,220,151,.13)}
+.slot.filled.bad{border-color:rgba(255,92,122,.6);background:rgba(255,92,122,.13)}
+.slot .fb{font-size:clamp(10px,.85vw,13px);color:#cfd0e6;line-height:1.3;display:none}
+.slot.scored .fb{display:block}
+.opt{
+  border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:8px 11px;
+  font-size:clamp(11px,1vw,15px);font-weight:700;transition:.15s;text-align:left;line-height:1.25
+}
+.opt:hover{background:var(--panel2);transform:translateY(-2px)}
+.opt.armed{border-color:var(--sleep);background:rgba(139,123,255,.24);box-shadow:0 0 0 1px var(--sleep) inset}
+.opt.used{opacity:.28;pointer-events:none}
+
+/* ============ CURVE CHART ============ */
+.chartbox{position:relative;width:100%;flex:1;min-height:200px}
+.chartbox svg{width:100%;height:100%;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+.lg{
+  display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;
+  border:1px solid var(--line);background:var(--panel);font-size:clamp(10px,.95vw,14px);font-weight:750;transition:.15s
+}
+.lg:hover{background:var(--panel2)}
+.lg.off{opacity:.32}
+.lg i{width:14px;height:5px;border-radius:3px;display:block}
+.curve{stroke-dasharray:2000;stroke-dashoffset:2000;transition:stroke-dashoffset 1.9s ease-out,opacity .3s}
+.curve.draw{stroke-dashoffset:0}
+.curve.hide{opacity:0}
+
+/* ============ QUIZ ============ */
+.quizq{font-size:clamp(18px,2.3vw,36px);font-weight:820;line-height:1.2;letter-spacing:-.02em}
+.qopt{
+  border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:12px 16px;
+  font-size:clamp(13px,1.25vw,20px);font-weight:700;transition:.18s;text-align:left;display:flex;gap:12px;align-items:center
+}
+.qopt:hover{background:var(--panel2)}
+.qopt .k{
+  width:32px;height:32px;flex:0 0 auto;border-radius:9px;background:var(--panel2);
+  display:grid;place-items:center;font-weight:850;font-size:15px
+}
+.qopt.right{border-color:var(--good);background:rgba(61,220,151,.18)}
+.qopt.right .k{background:var(--good);color:#062b1c}
+.qopt.wrong{border-color:rgba(255,92,122,.5);opacity:.5}
+.scorebox{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.team{
+  display:flex;align-items:center;gap:9px;padding:8px 14px;border-radius:14px;
+  border:1px solid var(--line);background:var(--panel);font-weight:800
+}
+.team .tv{font-size:clamp(18px,1.9vw,28px);font-variant-numeric:tabular-nums;min-width:34px;text-align:center}
+.tinybtn{
+  width:30px;height:30px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);
+  display:grid;place-items:center;font-weight:850;font-size:16px;transition:.15s
+}
+.tinybtn:hover{background:rgba(255,255,255,.18)}
+
+/* ============ SPINNER ============ */
+.wheelwrap{position:relative;display:grid;place-items:center;flex:1;min-height:220px}
+#wheel{transition:transform 4.4s cubic-bezier(.15,.85,.15,1)}
+.pointer{
+  position:absolute;top:-2px;left:50%;transform:translateX(-50%);
+  width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;
+  border-top:26px solid var(--fuel);filter:drop-shadow(0 3px 8px rgba(0,0,0,.6));z-index:2
+}
+
+/* ============ OVERLAYS ============ */
+.overlay{
+  position:fixed;inset:0;z-index:50;background:rgba(6,7,16,.94);backdrop-filter:blur(10px);
+  display:none;flex-direction:column;padding:clamp(18px,3vw,40px);gap:18px;overflow:auto
+}
+.overlay.on{display:flex}
+.ovgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.ovcard{
+  border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:12px;
+  text-align:left;transition:.16s;display:flex;flex-direction:column;gap:5px
+}
+.ovcard:hover{background:var(--panel2);transform:translateY(-3px)}
+.ovcard.cur{border-color:var(--fuel);background:rgba(255,176,32,.14)}
+.ovcard .n{font-size:11px;font-weight:850;color:var(--muted);letter-spacing:.14em}
+.ovcard .t{font-weight:780;font-size:15px;line-height:1.25}
+.ovcard .m{font-size:11.5px;color:var(--muted)}
+#notesBody{max-width:1000px;display:flex;flex-direction:column;gap:14px}
+#notesBody li{margin-left:20px;margin-bottom:6px}
+
+/* ============ TITLE SLIDE ============ */
+.hero{flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(12px,2vh,26px)}
+.hero h1{max-width:16ch}
+.orbit{display:flex;gap:clamp(10px,1.4vw,20px);flex-wrap:wrap}
+.orb{
+  padding:clamp(11px,1.3vw,20px) clamp(15px,1.8vw,28px);border-radius:18px;
+  border:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:3px;min-width:150px
+}
+.orb .k{font-size:clamp(20px,2.4vw,36px);font-weight:850;letter-spacing:-.03em}
+.orb .v{font-size:clamp(11px,1vw,15px);color:var(--muted);font-weight:650}
+
+.pill-list{display:flex;flex-direction:column;gap:9px}
+.pill{
+  display:flex;gap:12px;align-items:flex-start;padding:11px 14px;border-radius:14px;
+  background:var(--panel);border:1px solid var(--line)
+}
+.pill .ic{
+  width:30px;height:30px;flex:0 0 auto;border-radius:9px;display:grid;place-items:center;
+  font-weight:850;font-size:14px;background:rgba(139,123,255,.25);color:var(--sleep2)
+}
+.pill.f .ic{background:rgba(255,176,32,.22);color:var(--fuel2)}
+.pill.g .ic{background:rgba(61,220,151,.2);color:var(--good)}
+.pill .tx{font-size:clamp(12px,1.15vw,18px);line-height:1.4}
+.pill .tx b{font-weight:800}
+
+.bigbtn{
+  padding:12px 26px;border-radius:14px;font-weight:820;font-size:clamp(13px,1.2vw,19px);
+  background:linear-gradient(135deg,var(--fuel),#f08c00);color:#231400;transition:.18s;border:0
+}
+.bigbtn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(255,176,32,.32)}
+.bigbtn.s{background:linear-gradient(135deg,var(--sleep2),var(--sleep));color:#120a33}
+.bigbtn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--ink)}
+.bigbtn.ghost:hover{background:var(--panel2);box-shadow:none}
+
+.talkbox{
+  border-left:4px solid var(--fuel);background:rgba(255,176,32,.09);border-radius:0 14px 14px 0;
+  padding:11px 16px;font-size:clamp(12px,1.15vw,18px);line-height:1.45
+}
+.talkbox.s{border-left-color:var(--sleep);background:rgba(139,123,255,.1)}
+.talkbox b{color:var(--fuel2)}
+.talkbox.s b{color:var(--sleep2)}
+
+.print-only{display:none}
+@media print{
+  body{overflow:visible;background:#fff;color:#000}
+  body::before{display:none}
+  .hud,.navbar,#progress,.overlay{display:none!important}
+  .slide{display:block!important;position:static;page-break-after:always;color:#000}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="hud">
+    <div class="brand"><b>FUEL &amp; RECHARGE</b><span>Sleep + Nutrition</span></div>
+    <div class="phase" id="phaseChip" data-p="intro">Start</div>
+    <div class="hud-spacer"></div>
+    <button class="chip btn" id="lessonChip" title="Click to start/pause the whole-lesson clock"><small>Lesson</small> <span id="lessonTime">00:00</span></button>
+    <div class="chip timer" id="timerChip" title="Activity timer. Press T to start/pause, R to reset."><small id="timerLbl">Segment</small> <span id="timerTime">0:00</span></div>
+    <div class="chip" id="slideChip"><span id="slideNum">1</span> / <span id="slideTot">16</span></div>
+    <button class="chip btn" id="overviewBtn" title="Slide overview (O)">☰</button>
+    <button class="chip btn" id="notesBtn" title="Teacher notes (N)">Notes</button>
+    <button class="chip btn" id="fsBtn" title="Fullscreen (F)">⛶</button>
+  </header>
+  <div id="progress"><div id="progressBar"></div></div>
+
+  <main id="deck">
+
+  <!-- ================= 1. TITLE ================= -->
+  <section class="slide" data-title="Title" data-mins="1" data-phase="intro" data-label="Welcome">
+    <div class="hero">
+      <div class="eyebrow">Year 10 Workshop &middot; 60 minutes</div>
+      <h1>Your brain runs on two things you control every single day.</h1>
+      <p class="lede">No notebooks. No note-taking. You will vote, argue, build, guess and compete. By the end you will walk out with <span class="hl">one change</span> you are actually going to make.</p>
+      <div class="orbit">
+        <div class="orb"><div class="k">2</div><div class="v">Systems: sleep and fuel</div></div>
+        <div class="orb"><div class="k">6</div><div class="v">Challenges to beat</div></div>
+        <div class="orb"><div class="k">1</div><div class="v">Habit you take home</div></div>
+      </div>
+      <div class="talkbox s"><b>Ground rule:</b> nobody here is going to tell you to go to bed at 9pm and eat kale. We are going to look at what the research actually says, then you decide what is worth changing.</div>
+    </div>
+  </section>
+
+  <!-- ================= 2. MYTH BUSTER ================= -->
+  <section class="slide" data-title="Stand-Up Myth Buster" data-mins="5" data-phase="intro" data-label="Activity 1">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Activity 1 &middot; 5 min &middot; Everyone on their feet</div>
+        <h2>Stand up if you think it is <span class="hl-g">TRUE</span>. Stay seated if you think it is <span class="hl">FALSE</span>.</h2>
+      </div>
+      <span class="tag do">Whole class</span>
+    </div>
+    <div class="body-area">
+      <div class="cols c2" id="mythGrid"></div>
+      <p class="src">Sources: Van Dongen et al. 2003 <i>Sleep</i>; Wolraich et al. 1995 <i>JAMA</i>; Depner et al. 2019 <i>Current Biology</i>; Carskadon 2011 <i>Pediatric Clinics</i>; Ganio et al. 2011 <i>British Journal of Nutrition</i>.</p>
+    </div>
+  </section>
+
+  <!-- ================= 3. HYPNOGRAM ================= -->
+  <section class="slide" data-title="The Night Shift" data-mins="4" data-phase="sleep" data-label="Sleep">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Part 1 &middot; Sleep</div>
+        <h2>You are not switched off. You are running the night shift.</h2>
+      </div>
+      <span class="tag">Tap a stage</span>
+    </div>
+    <div class="body-area cols c-2-1">
+      <div class="card glow" style="display:flex;flex-direction:column;gap:10px;min-height:0">
+        <div class="chartbox" id="hypnoBox"></div>
+        <div class="row" id="stageBtns" style="gap:8px"></div>
+      </div>
+      <div class="stack">
+        <div class="card" id="stageInfo" style="min-height:150px">
+          <h3 id="stageTitle">Pick a stage</h3>
+          <p id="stageText" class="muted" style="margin-top:8px">Each bar on that chart is a real sleep stage. Tap one to see what your body is doing during it, and what you lose if you cut the night short.</p>
+        </div>
+        <div class="card">
+          <h3>Here is the catch</h3>
+          <p style="margin-top:8px">Deep sleep loads the <span class="hl-s">first half</span> of the night. Dream sleep loads the <span class="hl-s">second half</span>. So going to bed 2 hours late does not shave 2 hours off evenly. It removes almost all of your dream sleep, which is the part that files memories and resets your emotions.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 4. SLEEP DETECTIVE ================= -->
+  <section class="slide" data-title="Sleep Detective" data-mins="7" data-phase="sleep" data-label="Activity 2">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Activity 2 &middot; 7 min &middot; Groups of 3 or 4</div>
+        <h2>Four people. Four problems. You are the sleep detective.</h2>
+      </div>
+      <span class="tag do">Groups</span>
+    </div>
+    <div class="body-area">
+      <div class="talkbox s"><b>Your job:</b> 3 minutes in your group. For each case, decide what is wrecking their sleep and name <b>one</b> fix. Then we hear from four groups and tap to reveal.</div>
+      <div class="cols c4" id="caseGrid" style="flex:1;min-height:0"></div>
+    </div>
+  </section>
+
+  <!-- ================= 5. BODY CLOCK ================= -->
+  <section class="slide" data-title="Teen Body Clock" data-mins="3" data-phase="sleep" data-label="Sleep">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Part 1 &middot; Sleep</div>
+        <h2>You are not lazy. Your clock genuinely moved.</h2>
+      </div>
+      <span class="tag">Tap the toggle</span>
+    </div>
+    <div class="body-area cols c-2-1">
+      <div class="card glow" style="display:flex;flex-direction:column;gap:10px;min-height:0">
+        <div class="chartbox" id="clockBox"></div>
+        <div class="row">
+          <button class="bigbtn s" id="schoolToggle">What if school started at 10am?</button>
+          <span class="muted src" id="clockNote">Melatonin is the hormone that tells your brain it is night. Curves shown are typical patterns, not exact values.</span>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card stat s"><div class="num">~2 hrs</div><div class="lbl">How much later a teenager's melatonin switches on compared with a 10 year old or an adult</div></div>
+        <div class="card">
+          <p>At puberty your sleep pressure builds more slowly and your melatonin release shifts later. Telling a 15 year old to fall asleep at 9:30pm is like telling an adult to fall asleep at 7:30pm.</p>
+          <p style="margin-top:10px"><span class="hl-s">But:</span> the clock is not locked. Morning light, a consistent wake time and evening dimness pull it earlier. Late screens, weekend sleep-ins and a 4pm energy drink push it later.</p>
+        </div>
+        <p class="src">Carskadon 2011; Crowley et al. 2018 <i>Journal of Adolescence</i>. Trials of later school start times (e.g. Seattle, 2018 <i>Science Advances</i>) found students gained around 34 minutes of sleep per night.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 6. SLEEP DEBT ================= -->
+  <section class="slide tight" data-title="Sleep Debt Calculator" data-mins="5" data-phase="sleep" data-label="Live data">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Live class data &middot; 5 min</div>
+        <h2>Let's do the maths on this class.</h2>
+      </div>
+      <span class="tag do">Hands up, teacher drives</span>
+    </div>
+    <div class="body-area cols c-1-2">
+
+      <div class="card glow stack">
+        <h3>Set it to a typical school night</h3>
+        <div class="slider-wrap">
+          <label>1. Got into bed <span id="bedVal">10:00 pm</span></label>
+          <input type="range" id="bedSlider" min="0" max="28" value="12" step="1">
+        </div>
+        <div class="slider-wrap">
+          <label>2. Phone actually went down <span id="phoneVal">11:15 pm</span></label>
+          <input type="range" id="phoneSlider" min="0" max="36" value="17" step="1">
+        </div>
+        <div class="slider-wrap">
+          <label>3. Light off, eyes shut <span id="lightVal">11:30 pm</span></label>
+          <input type="range" id="lightSlider" min="0" max="36" value="18" step="1">
+        </div>
+        <div class="slider-wrap">
+          <label>4. Minutes lying there awake <span id="latVal">15 min</span></label>
+          <input type="range" id="latSlider" min="0" max="90" value="15" step="5">
+        </div>
+        <div class="slider-wrap">
+          <label>5. Alarm goes off <span id="wakeVal">7:00 am</span></label>
+          <input type="range" id="wakeSlider" min="0" max="24" value="8" step="1">
+        </div>
+        <p class="src">Target for 14 to 17 year olds: <b>8 to 10 hours</b> a night (AASM consensus 2016; Sleep Health Foundation Australia). Yearly figures assume this is a normal night for you.</p>
+      </div>
+
+      <div class="stack">
+        <div class="card glow stack">
+          <div class="row" style="justify-content:space-between">
+            <h3>What that night actually looks like</h3>
+            <span class="chip" id="nbRange">10:00 pm &rarr; 7:00 am</span>
+          </div>
+          <div class="nightbar" id="nightBar"></div>
+          <div class="nbkey">
+            <span><i style="background:#ffb020"></i>On the phone in bed</span>
+            <span><i style="background:#584ea4"></i>Awake, trying to sleep</span>
+            <span><i style="background:#2fbe80"></i>Actually asleep</span>
+          </div>
+        </div>
+
+        <div class="cols c4">
+          <div class="card stat"><div class="num" id="perceivedOut">9.0</div><div class="lbl">hours you would <b>say</b> you slept</div></div>
+          <div class="card stat s"><div class="num" id="hrsOut">7.3</div><div class="lbl">hours you <b>actually</b> slept</div></div>
+          <div class="card stat"><div class="num" id="gapOut">105</div><div class="lbl">minutes a night that do not exist</div></div>
+          <div class="card stat g"><div class="num" id="debtOut">3.5</div><div class="lbl">hours short per school week</div></div>
+        </div>
+
+        <div class="cols c2">
+          <div class="card">
+            <h3>Now multiply it by a year</h3>
+            <div class="pill-list" style="margin-top:9px">
+              <div class="pill f"><div class="ic">&#128241;</div><div class="tx"><b id="yrPhoneH">456 hours</b> on your phone in bed. That is <b id="yrPhoneD">19 full days</b>, awake, scrolling, in the dark.</div></div>
+              <div class="pill"><div class="ic">&#128564;</div><div class="tx"><b id="yrNights">32 full nights</b> of sleep lost across a year. Gone. Not recoverable.</div></div>
+              <div class="pill g"><div class="ic">&#127979;</div><div class="tx">Your phone-in-bed time alone is worth <b id="yrSchool">76 school days</b> of lesson time.</div></div>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card" id="debtVerdict"><h3 id="dvTitle">Set the sliders</h3><p id="dvText" style="margin-top:7px" class="muted">Move the sliders to a typical night for this class.</p></div>
+            <div class="talkbox s"><b>The catch:</b> cut to 6 hours for 2 weeks and people still rated themselves only "a bit tired" while their measured performance fell to the level of two nights with no sleep at all. You lose the ability to notice. <span class="src">Van Dongen et al. 2003, <i>Sleep</i>.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 7. WIND DOWN BUILDER ================= -->
+  <section class="slide" data-title="Build the Wind-Down" data-mins="7" data-phase="sleep" data-label="Activity 3">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Activity 3 &middot; 7 min &middot; Teams call out, one student drives</div>
+        <h2>Build the last hour before bed. Highest score wins.</h2>
+      </div>
+      <span class="tag do">Tap a card, then tap a slot</span>
+    </div>
+    <div class="body-area stack">
+      <div class="timeline" id="wdSlots"></div>
+      <div class="cols" id="wdOpts" style="grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:8px"></div>
+      <div class="row">
+        <button class="bigbtn s" id="wdScore">Score this routine</button>
+        <button class="bigbtn ghost" id="wdReset">Clear</button>
+        <div class="chip" style="font-size:16px">Score <b id="wdTotal" style="margin-left:6px;font-size:1.35em">0</b> / 12</div>
+        <div class="grow muted src" id="wdMsg" style="flex:1;min-width:200px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 8. BRAIN FUEL ================= -->
+  <section class="slide" data-title="Brain Is A Fuel Hog" data-mins="3" data-phase="fuel" data-label="Fuel">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Part 2 &middot; Fuel</div>
+        <h2>Your brain is 2% of you and eats 20% of your energy.</h2>
+      </div>
+    </div>
+    <div class="body-area stack">
+      <div class="cols c3">
+        <div class="card stat"><div class="num">20%</div><div class="lbl">of your total energy goes to an organ that weighs about 1.4 kg</div></div>
+        <div class="card stat g"><div class="num">0</div><div class="lbl">energy your brain can store for later. It needs a steady delivery, all day</div></div>
+        <div class="card stat s"><div class="num">~1 hr</div><div class="lbl">after a big hit of fast sugar, alertness measurably <b>drops</b> rather than rises</div></div>
+      </div>
+      <div class="cols c2">
+        <div class="card">
+          <h3>The thing nobody tells you</h3>
+          <p style="margin-top:8px">A 2019 review pooled <span class="hl">31 studies</span> and around 1,300 people to test whether sugar gives you an energy boost. It does not. Within 60 minutes, people who had a big dose of fast sugar were measurably <span class="hl">more tired and less alert</span> than people who had none.</p>
+          <p class="src" style="margin-top:8px">Mantantzis et al. 2019, <i>Neuroscience &amp; Biobehavioral Reviews</i>. The "sugar rush" is one of the most tested and most consistently disproven ideas in nutrition.</p>
+        </div>
+        <div class="card">
+          <h3>So what actually works?</h3>
+          <div class="pill-list" style="margin-top:10px">
+            <div class="pill f"><div class="ic">1</div><div class="tx"><b>Slow release beats fast.</b> Wholegrains, oats, legumes and fruit release glucose gradually instead of dumping it.</div></div>
+            <div class="pill f"><div class="ic">2</div><div class="tx"><b>Pair it.</b> Carbs plus protein plus fat flattens the spike. Toast alone spikes. Toast with eggs does not.</div></div>
+            <div class="pill f"><div class="ic">3</div><div class="tx"><b>Do not run on empty.</b> Going into a 3 hour block with nothing in you makes concentration harder, especially for working memory.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 9. CRASH TEST ================= -->
+  <section class="slide" data-title="Crash Test" data-mins="5" data-phase="fuel" data-label="Activity 4">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Activity 4 &middot; 5 min &middot; Vote first, then reveal</div>
+        <h2>Five breakfasts. Which one is still working at period 4?</h2>
+      </div>
+      <span class="tag do">Class vote</span>
+    </div>
+    <div class="body-area cols c-1-2">
+      <div class="stack">
+        <div class="talkbox"><b>Step 1:</b> Hands up for your pick. <b>Step 2:</b> Tap each one to race its curve. <b>Step 3:</b> Was the class right?</div>
+        <div class="tiles" id="breakfastList" style="grid-template-columns:1fr"></div>
+        <button class="bigbtn ghost" id="raceAll">Race all five</button>
+      </div>
+      <div class="card glow" style="display:flex;flex-direction:column;gap:10px;min-height:0">
+        <div class="chartbox" id="curveBox"></div>
+        <div class="legend" id="curveLegend"></div>
+        <p class="src">Simplified model based on glycaemic response and satiety research. It shows the <i>shape</i> of the day, not exact blood glucose. The pattern (fast spike then a dip below where you started) is well documented.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 10. BIG FOUR ================= -->
+  <section class="slide" data-title="The Big Four" data-mins="3" data-phase="fuel" data-label="Fuel">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Part 2 &middot; Fuel</div>
+        <h2>Four things your body needs more of right now than it ever will again.</h2>
+      </div>
+      <span class="tag">Tap each one</span>
+    </div>
+    <div class="body-area">
+      <div class="cols c4" id="bigFour" style="flex:1;min-height:0"></div>
+    </div>
+  </section>
+
+  <!-- ================= 11. FUEL BUILD ================= -->
+  <section class="slide tight" data-title="Fuel Build Challenge" data-mins="7" data-phase="fuel" data-label="Activity 5">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Activity 5 &middot; 7 min &middot; Teams of 3 or 4</div>
+        <h2>Build a school day. Pick <span class="hl">6</span> items. Beat the other teams.</h2>
+      </div>
+      <span class="tag do">Teams call it out</span>
+    </div>
+    <div class="body-area cols c-2-1">
+      <div class="stack" style="min-height:0">
+        <div class="tiles" id="foodGrid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))"></div>
+      </div>
+      <div class="stack">
+        <div class="card stack">
+          <div class="row" style="justify-content:space-between">
+            <h3>Team scorecard</h3>
+            <span class="chip"><span id="pickCount">0</span> / 6 picked</span>
+          </div>
+          <div class="meter"><div class="mh"><span>Steady energy</span><span id="mv-steady">0</span></div><div class="mbar"><div class="mfill" id="m-steady"></div></div></div>
+          <div class="meter"><div class="mh"><span>Iron</span><span id="mv-iron">0</span></div><div class="mbar"><div class="mfill" id="m-iron"></div></div></div>
+          <div class="meter"><div class="mh"><span>Calcium</span><span id="mv-calcium">0</span></div><div class="mbar"><div class="mfill" id="m-calcium"></div></div></div>
+          <div class="meter"><div class="mh"><span>Brain fats (omega-3)</span><span id="mv-omega">0</span></div><div class="mbar"><div class="mfill" id="m-omega"></div></div></div>
+          <div class="meter"><div class="mh"><span>Fibre</span><span id="mv-fibre">0</span></div><div class="mbar"><div class="mfill" id="m-fibre"></div></div></div>
+          <div class="meter"><div class="mh"><span>Fluid</span><span id="mv-water">0</span></div><div class="mbar"><div class="mfill" id="m-water"></div></div></div>
+          <div class="meter"><div class="mh"><span style="color:var(--bad)">Crash risk</span><span id="mv-crash">0</span></div><div class="mbar"><div class="mfill low" id="m-crash"></div></div></div>
+        </div>
+        <div class="card stat g"><div class="num" id="fuelScore">0</div><div class="lbl">Team score out of 100</div></div>
+        <div class="card" id="fuelFeedback" style="min-height:70px"><p class="muted">Pick 6 items to get your team's verdict.</p></div>
+        <button class="bigbtn ghost" id="foodReset">Clear picks</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 12. THE LOOP ================= -->
+  <section class="slide tight" data-title="The Domino Effect" data-mins="3" data-phase="both" data-label="The link">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Part 3 &middot; Where the two meet</div>
+        <h2>Bad sleep does not just make you tired. It changes what you want to eat.</h2>
+      </div>
+      <span class="tag">Tap to run the loop</span>
+    </div>
+    <div class="body-area cols c-2-1">
+      <div class="card glow" style="display:flex;flex-direction:column;min-height:0">
+        <div class="chartbox" id="loopBox"></div>
+        <button class="bigbtn s" id="loopRun" style="align-self:flex-start">Run the loop</button>
+      </div>
+      <div class="stack">
+        <div class="card stat"><div class="num">~600</div><div class="lbl">extra calories of high-energy food that sleep-deprived people wanted the next day, in a controlled brain-imaging study</div></div>
+        <div class="card">
+          <h3>What is actually happening</h3>
+          <p style="margin-top:8px">One night of short sleep does two things at once. The part of your brain that weighs up decisions goes <span class="hl-s">quieter</span>. The part that reacts to reward goes <span class="hl">louder</span>. So the choice feels obvious rather than tempting. It is not weak willpower, it is a shifted brain.</p>
+          <p class="src" style="margin-top:8px">Greer, Goldstein &amp; Walker 2013, <i>Nature Communications</i>. Also: short sleep raises ghrelin (hunger signal) and lowers leptin (fullness signal).</p>
+        </div>
+        <div class="card">
+          <h3>And it runs backwards too</h3>
+          <p style="margin-top:8px">Caffeine has a half-life of about <span class="hl">5 to 6 hours</span>. An energy drink at 4pm still has a quarter of its caffeine active in you at bedtime. Big late meals and high sugar days both make sleep lighter and more broken.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 13. QUIZ ================= -->
+  <section class="slide" data-title="Rapid-Fire Quiz" data-mins="4" data-phase="both" data-label="Challenge">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Challenge &middot; 4 min &middot; Fastest team to call it</div>
+        <h2 id="quizHead">Rapid-fire. First team to shout the letter.</h2>
+      </div>
+      <div class="scorebox">
+        <div class="team"><span style="color:var(--sleep2)">Team A</span><button class="tinybtn" data-sc="a-">-</button><span class="tv" id="scoreA">0</span><button class="tinybtn" data-sc="a+">+</button></div>
+        <div class="team"><span style="color:var(--fuel2)">Team B</span><button class="tinybtn" data-sc="b-">-</button><span class="tv" id="scoreB">0</span><button class="tinybtn" data-sc="b+">+</button></div>
+      </div>
+    </div>
+    <div class="body-area stack">
+      <div class="card glow stack" style="flex:1;justify-content:center">
+        <div class="eyebrow"><span id="qIdx">1</span> of 8</div>
+        <div class="quizq" id="qText">Loading...</div>
+        <div class="cols c2" id="qOpts" style="gap:10px"></div>
+        <p class="reveal" id="qWhy" style="font-size:clamp(12px,1.15vw,18px);color:#d8d9ec;line-height:1.45"></p>
+      </div>
+      <div class="row">
+        <button class="bigbtn ghost" id="qPrev">Back</button>
+        <button class="bigbtn s" id="qReveal">Reveal answer</button>
+        <button class="bigbtn" id="qNext">Next question</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 14. PLEDGE ================= -->
+  <section class="slide" data-title="Pick Your ONE Thing" data-mins="2" data-phase="both" data-label="Commit">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">Final 2 minutes &middot; Everyone commits</div>
+        <h2>One change. Seven days. That is the whole ask.</h2>
+      </div>
+      <span class="tag do">Spin or choose</span>
+    </div>
+    <div class="body-area cols c-1-2">
+      <div class="stack">
+        <div class="talkbox"><b>Turn to the person next to you</b> and finish this sentence out loud: <i>"For the next week, I am going to..."</i> Saying it to someone makes you far more likely to do it than thinking it.</div>
+        <div class="card" id="pledgeOut" style="min-height:110px;display:flex;flex-direction:column;justify-content:center">
+          <div class="eyebrow">Landed on</div>
+          <h3 id="pledgeText" style="margin-top:8px">Spin the wheel for a suggestion</h3>
+          <p class="muted src" id="pledgeWhy" style="margin-top:8px"></p>
+        </div>
+        <div class="row">
+          <button class="bigbtn" id="spinBtn">Spin</button>
+          <button class="bigbtn ghost" id="pledgeList">Show all 12</button>
+        </div>
+      </div>
+      <div class="wheelwrap"><div class="pointer"></div><svg id="wheel" viewBox="0 0 400 400" style="max-height:100%;max-width:100%"></svg></div>
+    </div>
+  </section>
+
+  <!-- ================= 15. TAKEAWAY ================= -->
+  <section class="slide" data-title="Takeaway Card" data-mins="1" data-phase="both" data-label="Close">
+    <div class="slide-head">
+      <div class="grow">
+        <div class="eyebrow">If you remember nothing else</div>
+        <h2>Six things that are actually worth your time.</h2>
+      </div>
+    </div>
+    <div class="body-area cols c2">
+      <div class="stack">
+        <div class="pill"><div class="ic">1</div><div class="tx"><b>Same wake time, every day.</b> Even weekends, within about an hour. It is the single strongest anchor for your body clock.</div></div>
+        <div class="pill"><div class="ic">2</div><div class="tx"><b>Phone charges outside the bedroom.</b> Not face down. Not on silent. Outside. It removes the light and the 1am scroll in one move.</div></div>
+        <div class="pill"><div class="ic">3</div><div class="tx"><b>No caffeine after lunch.</b> Half of a 3pm energy drink is still in you at 9pm.</div></div>
+      </div>
+      <div class="stack">
+        <div class="pill f"><div class="ic">4</div><div class="tx"><b>Never eat carbs naked.</b> Always add protein or fat. Toast plus eggs, not toast. Fruit plus nuts, not just fruit.</div></div>
+        <div class="pill f"><div class="ic">5</div><div class="tx"><b>Carry a water bottle.</b> 2% dehydration is enough to measurably drop your concentration, and you will not notice it happening.</div></div>
+        <div class="pill g"><div class="ic">6</div><div class="tx"><b>Your bones and your iron have a deadline.</b> Around 90% of your adult bone mass is built by roughly age 20. This is the window.</div></div>
+      </div>
+    </div>
+    <div class="talkbox"><b>The honest summary:</b> you do not need to be perfect at any of this. Fixing your wake time and putting your phone in another room would put you ahead of most adults, and it costs you nothing.</div>
+  </section>
+
+  </main>
+
+  <nav class="navbar">
+    <button class="navbtn" id="prevBtn">&larr; Back</button>
+    <div class="keys">
+      <kbd>&larr;</kbd> <kbd>&rarr;</kbd> navigate &middot; <kbd>T</kbd> start/pause timer &middot; <kbd>R</kbd> reset timer &middot; <kbd>O</kbd> overview &middot; <kbd>N</kbd> notes &middot; <kbd>F</kbd> fullscreen
+    </div>
+    <button class="navbtn primary" id="nextBtn">Next &rarr;</button>
+  </nav>
+</div>
+
+<div class="overlay" id="overview">
+  <div class="row" style="justify-content:space-between">
+    <div><div class="eyebrow">Run sheet</div><h2>60 minute overview</h2></div>
+    <button class="bigbtn ghost" data-close="overview">Close</button>
+  </div>
+  <div class="ovgrid" id="ovGrid"></div>
+</div>
+
+<div class="overlay" id="notes">
+  <div class="row" style="justify-content:space-between">
+    <div><div class="eyebrow">Teacher notes</div><h2 id="notesTitle">Notes</h2></div>
+    <button class="bigbtn ghost" data-close="notes">Close</button>
+  </div>
+  <div id="notesBody"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   DATA
+   ============================================================ */
+
+const MYTHS = [
+  { claim:"Some people can train themselves to run fine on 5 hours' sleep.",
+    truth:false,
+    why:"Genuine short sleepers exist but they are vanishingly rare (a fraction of 1%, linked to specific gene variants). What actually happens is that you stop <b>noticing</b> the impairment while your performance keeps dropping." },
+  { claim:"Sugar makes people hyperactive.",
+    truth:false,
+    why:"Tested repeatedly, including studies where parents were told their child had sugar when they had not. Parents rated them as hyperactive anyway. The sugar did nothing. The expectation did." },
+  { claim:"Sleeping in on the weekend cancels out a bad week.",
+    truth:false,
+    why:"You recover some alertness but not all of it, and the big weekend shift drags your body clock later, which makes Monday and Tuesday worse. Researchers call it social jetlag." },
+  { claim:"Being only 2% dehydrated measurably damages your concentration.",
+    truth:true,
+    why:"About 2% fluid loss (roughly what you get through a hot morning without drinking) reliably worsens attention, short-term memory and mood in controlled trials. You usually feel it as being annoyed or foggy, not thirsty." },
+  { claim:"Teenagers naturally fall asleep later than adults. It is biology, not laziness.",
+    truth:true,
+    why:"At puberty your melatonin release shifts around 2 hours later and sleep pressure builds more slowly. This happens in other mammals too. The problem is that school start times did not shift with it." }
+];
+
+const STAGES = [
+  { id:"awake", name:"Awake", color:"#ff5c7a", text:"Brief wake-ups between cycles are completely normal. Most people wake several times a night and never remember it. Waking up is not the problem. Staying awake is." },
+  { id:"rem", name:"REM (dream sleep)", color:"#ffb020", text:"Your brain is almost as active as when you are awake, but your body is paralysed. This is where emotional memories get processed and where creative problem-solving improves. Loaded into the <b>last third</b> of the night, which is exactly what you cut when you sleep in late and still get up for school." },
+  { id:"n1", name:"N1 (drifting off)", color:"#8b7bff", text:"The 1 to 7 minute doorway into sleep. If someone woke you here you would probably swear you were still awake." },
+  { id:"n2", name:"N2 (light sleep)", color:"#6d5ce0", text:"About half your whole night. Short bursts of brain activity called sleep spindles fire here, and they are strongly linked to locking in what you practised that day, especially motor skills like an instrument or a sport." },
+  { id:"n3", name:"N3 (deep sleep)", color:"#3ddc97", text:"The hardest stage to wake from. Growth hormone is released, muscle and tissue repair happens, the immune system does its work, and the brain runs its waste-clearance process. Loaded into the <b>first third</b> of the night. This is why a late night hurts physical recovery most." }
+];
+
+const CASES = [
+  { who:"Maya, 16",
+    facts:"In bed by 10:30 every night. Falls asleep fine. Wakes at 3am and lies there for over an hour. Has an <b>energy drink at 4pm</b> most days at work. Has assessments coming up.",
+    dx:"Caffeine plus stress arousal",
+    fix:"Caffeine's half-life is 5 to 6 hours, so a 4pm energy drink is still working at midnight. It does not always stop you falling asleep, but it makes the second half of the night lighter and easier to wake from. <b>Fix: cut caffeine after lunch, and do a 5 minute to-do list before bed.</b> One study found writing tomorrow's to-do list got people to sleep about 9 minutes faster." },
+  { who:"Josh, 15",
+    facts:"Plays competitive online games until 12:30am. Phone on the pillow. Sleeps until 11am on weekends. <b>Falls asleep in period 1</b> most Mondays.",
+    dx:"Social jetlag plus pre-sleep arousal",
+    fix:"Two problems stacked. Competitive gaming spikes adrenaline and heart rate right when your body needs to wind down, and the 5 hour weekend shift is like flying to Perth and back every week. <b>Fix: cap the weekend sleep-in at about 1 hour past the school wake time, and stop competitive play 45 minutes before bed.</b>" },
+  { who:"Priya, 16",
+    facts:"Gets 8.5 hours most nights. Still exhausted. Skips breakfast, tired by mid-morning, gets <b>dizzy standing up</b> in PE. Recently went vegetarian.",
+    dx:"Likely iron deficiency, not a sleep problem",
+    fix:"Iron deficiency is the most common nutrient deficiency in the world and teenage girls are the highest-risk group in Australia. Plant iron is absorbed far less easily than iron from meat. <b>Fix: see a GP for a blood test, and pair plant iron sources (legumes, tofu, fortified cereal, leafy greens) with vitamin C</b>, which can multiply absorption several times over. Tea and coffee with meals block it." },
+  { who:"Liam, 15",
+    facts:"In bed at 10pm but lies awake for over an hour scrolling. Room has the <b>main light on</b> until lights out. Bedtime varies by 2 hours night to night. Trains at 6am twice a week.",
+    dx:"Inconsistent schedule plus evening light",
+    fix:"Bright overhead light late in the evening delays melatonin, and a bedtime that swings by 2 hours means his body never knows when night starts. Newer research suggests the scroll steals more sleep by displacing time and keeping him alert than the blue light itself does. <b>Fix: lock the wake time first (it anchors everything), switch to a lamp after dinner, and charge the phone in another room.</b>" }
+];
+
+const WD_SLOTS = ["60 min before","45 min before","30 min before","15 min before","Lights out"];
+const WD_OPTS = [
+  { t:"Phone charging in another room", v:3, f:"Biggest single win. Removes the light and the 1am scroll." },
+  { t:"Same bedtime as last night", v:3, f:"Consistency is the strongest signal your body clock has." },
+  { t:"Hot shower", v:2, f:"The temperature drop afterwards helps trigger sleep onset." },
+  { t:"Switch to a lamp, lights down", v:2, f:"Dim light lets melatonin rise on schedule." },
+  { t:"Write tomorrow's to-do list", v:2, f:"Offloading worry got people to sleep about 9 min faster in one trial." },
+  { t:"Read a paper book", v:2, f:"Low arousal, no light in your eyes, no notifications." },
+  { t:"Cool the room down", v:1, f:"Your core temperature has to drop for you to fall asleep." },
+  { t:"Stretching or slow music", v:1, f:"Helps, but it is a small effect compared with the phone and the schedule." },
+  { t:"Scrolling in bed", v:-3, f:"Steals time, keeps you alert, and trains your brain that bed means awake." },
+  { t:"Energy drink or cola", v:-3, f:"Half of it is still in you 5 to 6 hours later." },
+  { t:"Ranked match or competitive game", v:-2, f:"Adrenaline and heart rate up at exactly the wrong moment." },
+  { t:"Big heavy meal", v:-2, f:"Digestion plus reflux makes sleep lighter and more broken." },
+  { t:"Cramming in bed", v:-2, f:"Teaches your brain that bed is a place for stress, not sleep." },
+  { t:"90 minute nap at 6pm", v:-2, f:"Dumps the sleep pressure you need to fall asleep at night." }
+];
+
+const BREAKFASTS = [
+  { n:"Nothing. Skipped it.", m:"Running on empty", c:"#8a8ba8",
+    pts:[62,58,52,44,38,34,32,36,58,54,44,38], },
+  { n:"Sugary cereal + juice", m:"Fast carbs, no protein", c:"#ff5c7a",
+    pts:[58,92,98,84,58,42,36,34,60,78,58,42] },
+  { n:"Energy drink + white toast with jam", m:"Caffeine + fast carbs", c:"#ff8a3d",
+    pts:[58,95,100,88,66,48,38,32,56,74,54,40] },
+  { n:"Wholegrain toast + eggs + fruit", m:"Slow carbs + protein", c:"#3ddc97",
+    pts:[58,76,84,84,80,76,72,70,84,86,82,76] },
+  { n:"Oats, yoghurt, berries, nuts", m:"Slow carbs + protein + fat + fibre", c:"#8b7bff",
+    pts:[58,72,80,82,82,80,78,76,86,88,86,82] }
+];
+const CURVE_HOURS = ["7am","8am","9am","10am","11am","12pm","1pm","2pm","3pm","4pm","5pm","6pm"];
+
+const BIG_FOUR = [
+  { k:"Iron", col:"#ff5c7a",
+    hook:"The most common nutrient deficiency on earth",
+    body:"Iron carries oxygen to your brain and muscles. Low iron feels exactly like being lazy or depressed: exhausted, foggy, irritable, out of breath on stairs. Teenage girls are the highest-risk group in Australia because of blood loss from periods combined with rapid growth.",
+    do:"Red meat, chicken, legumes, tofu, fortified cereal, leafy greens. <b>Always pair plant sources with vitamin C</b> (orange, capsicum, tomato, kiwi) which can multiply absorption several times. Avoid tea and coffee with meals, they block it." },
+  { k:"Calcium", col:"#3ddc97",
+    hook:"Around 90% of your adult bone mass is built by about age 20",
+    body:"This is a window that closes. Bone you do not build now is bone you do not get. Australian guidelines put 14 to 18 year olds at 1300 mg a day, higher than adults, and most teenagers fall well short of it.",
+    do:"Milk, yoghurt, cheese, fortified soy or oat milk, tinned salmon with bones, almonds, tofu set with calcium. Roughly 3 to 4 serves a day. Weight-bearing exercise builds bone too." },
+  { k:"Omega-3", col:"#8b7bff",
+    hook:"Your brain is about 60% fat by dry weight",
+    body:"DHA, a long-chain omega-3, is a structural part of your brain cell membranes. Your body cannot make useful amounts of it, so it has to come from food. Most Australian teenagers eat well under the recommended amount.",
+    do:"Oily fish (salmon, sardines, tinned tuna, mackerel) about twice a week. Plant sources like walnuts, chia and linseed help but convert to DHA poorly." },
+  { k:"Water", col:"#4dd0e1",
+    hook:"2% down is enough to hurt your marks",
+    body:"At around 2% fluid loss, attention, short-term memory and mood all measurably drop, and the strongest signal you get is not thirst. It is irritability and a headache. In a hot classroom that is an ordinary morning.",
+    do:"Carry a bottle and drink before you feel thirsty. Roughly 2 to 3 litres a day total from all sources, more if you train. Note that sugary drinks and energy drinks are the single biggest source of added sugar in the Australian teenage diet." }
+];
+
+const FOODS = [
+  { n:"Eggs on wholegrain toast", s:{steady:3,iron:1,fibre:2}, },
+  { n:"Oats + milk + banana", s:{steady:3,fibre:3,calcium:2} },
+  { n:"Greek yoghurt + berries", s:{steady:2,calcium:3,fibre:1} },
+  { n:"Sugary cereal + juice", s:{steady:-2,crash:3} },
+  { n:"Energy drink", s:{steady:-3,crash:3} },
+  { n:"600ml soft drink", s:{steady:-2,crash:3,water:1} },
+  { n:"Chicken + salad wrap", s:{steady:3,iron:1,fibre:2} },
+  { n:"Meat pie + sauce", s:{steady:1,iron:1,crash:1} },
+  { n:"Hot chips", s:{steady:0,fibre:1,crash:1} },
+  { n:"Tin of tuna or salmon", s:{steady:2,omega:3,iron:1} },
+  { n:"Baked beans on toast", s:{steady:3,iron:2,fibre:3} },
+  { n:"Beef + veg stir fry", s:{steady:3,iron:3,fibre:2} },
+  { n:"Lentil or chickpea curry", s:{steady:3,iron:2,fibre:3} },
+  { n:"Milk or fortified soy milk", s:{calcium:3,water:2,steady:1} },
+  { n:"Cheese + wholegrain crackers", s:{calcium:2,steady:2,fibre:1} },
+  { n:"Handful of nuts", s:{steady:2,omega:1,fibre:1} },
+  { n:"Orange + water bottle", s:{fibre:1,water:3,vitc:1} },
+  { n:"Salmon sushi", s:{omega:2,steady:2} },
+  { n:"Instant noodles", s:{steady:0,crash:1} },
+  { n:"Banana", s:{steady:1,fibre:1} }
+];
+const PLANT_IRON = ["Baked beans on toast","Lentil or chickpea curry"];
+
+const QUIZ = [
+  { q:"How many hours of sleep does a 15 year old actually need?",
+    o:["6 to 7","7 to 8","8 to 10","10 to 12"], a:2,
+    why:"8 to 10 hours, per the American Academy of Sleep Medicine consensus and the Sleep Health Foundation. Not 8 as a maximum. 8 as a minimum." },
+  { q:"You have an energy drink at 4pm. At 10pm, roughly how much of that caffeine is still active in you?",
+    o:["Basically none","About a quarter","About half","Almost all of it"], a:2,
+    why:"Half-life is around 5 to 6 hours, so at 6 hours roughly half is still circulating. It is one of the most common reasons teenagers cannot fall asleep and never suspect it." },
+  { q:"Which part of the night do you lose most when you go to bed 2 hours late but still get up for school?",
+    o:["Deep sleep","REM / dream sleep","Both equally","Neither, it spreads evenly"], a:1,
+    why:"REM loads into the last third of the night, so cutting the morning end removes most of it. That is your emotional processing and memory filing gone." },
+  { q:"A 2019 review of 31 studies tested the 'sugar rush'. What did it find?",
+    o:["A boost lasting about 30 min","A small boost, then a crash","No boost at all, and more tiredness within an hour","A boost only in teenagers"], a:2,
+    why:"There is no measurable boost. Within an hour people were more tired and less alert than those who had none. The sugar rush is not a real thing." },
+  { q:"Which of these does the most to pull a delayed teenage body clock earlier?",
+    o:["Going to bed earlier","A consistent WAKE time plus morning light","Taking melatonin","Napping in the afternoon"], a:1,
+    why:"You cannot force yourself to fall asleep, but you can control when you get up and when you get light. Wake time is the anchor. Bedtime follows it." },
+  { q:"Priya is vegetarian, exhausted and dizzy in PE despite sleeping 8.5 hours. Most likely?",
+    o:["Not enough sleep","Iron deficiency","Too much screen time","Dehydration only"], a:1,
+    why:"Classic iron deficiency picture. Most common nutrient deficiency worldwide, highest risk group in Australia is teenage girls. Needs a GP and a blood test, not a better bedtime." },
+  { q:"After one bad night's sleep, what changes about food?",
+    o:["Nothing, you just feel tired","You eat less because you feel sick","Your brain's reward response to junk food goes up and your decision-making goes down","You only crave caffeine"], a:2,
+    why:"Brain imaging shows reward areas amplify while frontal decision-making areas go quiet. Sleep-deprived people in one study wanted around 600 extra calories of high-energy food." },
+  { q:"Roughly what percentage of your adult bone mass is built by around age 20?",
+    o:["About 40%","About 60%","About 90%","About 100%"], a:2,
+    why:"Around 90%. Adolescence is the deposit window for your skeleton and it does not reopen. Calcium target for 14 to 18 year olds in Australia is 1300 mg a day." }
+];
+
+const PLEDGES = [
+  { t:"Phone charges outside my bedroom", w:"Removes the light and the late scroll in one move. Usually the single biggest win available." },
+  { t:"Same wake time, 7 days a week", w:"The strongest anchor for a delayed body clock. Within about an hour on weekends counts." },
+  { t:"No caffeine after 12pm", w:"Half of a 3pm hit is still working at 9pm." },
+  { t:"Eat something with protein at breakfast", w:"Flattens the spike and keeps working memory steady through period 3." },
+  { t:"Carry a water bottle every day", w:"2% dehydration measurably drops attention and you will not feel it as thirst." },
+  { t:"Screens off 30 min before bed", w:"Buys back time and drops arousal before you try to sleep." },
+  { t:"Add a vitamin C food to plant iron meals", w:"Can multiply iron absorption several times over. Free upgrade." },
+  { t:"Swap one soft drink for water each day", w:"Sugary drinks are the biggest single source of added sugar for Australian teens." },
+  { t:"Oily fish twice a week", w:"DHA is structural in your brain and your body cannot make enough of it." },
+  { t:"Lamp instead of the big light after dinner", w:"Lets melatonin rise on time instead of being held back." },
+  { t:"Get outside within an hour of waking", w:"Morning light is the reset signal that pulls your clock earlier." },
+  { t:"Write tomorrow's to-do list before bed", w:"Got people to sleep about 9 minutes faster in a controlled trial." }
+];
+
+const NOTES = {
+  "Title":["Set the tone in the first 30 seconds: this is not a lecture and nobody is writing anything down.","Explicitly say you are not here to tell them to go to bed at 9pm. Credibility with this age group depends on it.","Start the whole-lesson clock (click the Lesson chip in the top bar) as you begin."],
+  "Stand-Up Myth Buster":["Everyone stands. Read the claim, they stand for TRUE and sit for FALSE. Do not let them look around first, count down from 3.","Roughly 1 minute per myth. Tap the card to reveal the verdict.","The best moment is myth 1. Most classes split. The point to land: you lose the ability to notice you are impaired.","Myth 2 usually gets an argument. Lean into it, it builds trust that you are not just repeating what adults say."],
+  "The Night Shift":["Tap the coloured stage buttons under the chart. Do not read all five, pick N3 and REM.","Key line: deep sleep loads early, dream sleep loads late. A late night does not trim evenly, it deletes REM.","Ask: who here gets up at the same time every day? That sets up slide 5."],
+  "Sleep Detective":["Groups of 3 or 4. Give exactly 3 minutes, then take answers. Do not let it run to 5.","Assign one case per group if the class is large, or all four if you have time.","Reveal by tapping the case card. Ask the group for their diagnosis BEFORE you tap.","Priya is the important one. It teaches them that tiredness is not always a sleep problem, and it is the one most likely to apply to a real student in the room."],
+  "Teen Body Clock":["This slide buys you enormous goodwill. It says out loud that they are not lazy.","Tap the 10am toggle to show the Seattle result: students gained about 34 minutes a night.","Immediately follow with the counterweight: the clock is not locked, and their own habits push it further out."],
+  "Sleep Debt Calculator":["Do this live with real class data. Take hands for each slider in turn and set it to whatever the room agrees is typical. Do not use your own numbers.","Slider 1 (got into bed) then slider 2 (phone down) is where the whole slide lands. Ask slider 1 first and let them feel good about it, THEN ask when the phone actually went down. The gap between those two is the lesson.","Sliders 2 and 3 are the honesty sliders. Expect an argument and some laughing. That is fine, it means they are engaged. Push for the real number, not the number they would tell a parent.","The coloured night bar updates live. Point at the amber block and say: that is not sleep, and it is not free time either. It is the worst version of both.","The four stats are the payoff. Read them in this order: what you would SAY you slept, what you ACTUALLY slept, the minutes that do not exist, then the weekly debt.","The yearly panel is the moment that gets the biggest reaction. A typical Year 10 night (in bed 10, phone down 11:30) produces roughly 900 hours a year, which is over a month of 24-hour days. Let that sit for a couple of seconds before moving on.","Do not moralise here. Show the number, pause, move on. The number does the work.","Land the Van Dongen point last: your self-rating plateaus while your performance keeps falling."],
+  "Build the Wind-Down":["Two teams. Alternate picks, or let each team build one and compare scores.","Tap an option card, then tap a slot. Works with a mouse, a finger or an IWB pen.","Max is 12. Nobody usually gets it first go because they underrate the phone card and overrate stretching.","Reveal the per-card feedback with Score, then ask which one surprised them."],
+  "Brain Is A Fuel Hog":["Short, teacher-led, 3 minutes. Do not let this become a lecture.","The three stats do the work. The 2019 review is the headline: the sugar rush does not exist.","Land the rule they will actually remember: never eat carbs naked."],
+  "Crash Test":["Vote BEFORE revealing anything. Hands up for each of the five. Say the numbers out loud.","Most classes pick the energy drink or the eggs. The interesting reveal is that the energy drink wins for 40 minutes and loses the rest of the day.","Tap each breakfast to draw its curve, or use Race All Five.","Point at the 1pm to 2pm trough on the sugar curves and ask what lesson they have then."],
+  "The Big Four":["Tap each of the four cards. 1 minute each, no more.","Iron: aim this respectfully at the whole room but note girls are the highest-risk group.","Calcium: the deadline framing is what makes this stick. The window closes around 20.","Water: connect back to the myth buster."],
+  "Fuel Build Challenge":["Teams of 3 or 4. They call out picks, one student drives the screen.","Exactly 6 items. Watch for the team that picks 6 healthy things and still scores badly because they missed calcium or iron entirely.","There is a hidden bonus: pairing a vitamin C food (orange) with plant iron (baked beans or lentil curry) adds points. Do not tell them. Let a team discover it.","Run two or three teams and compare scores on the board."],
+  "The Domino Effect":["This is the slide that ties the whole hour together. Do not rush it.","Tap Run The Loop to animate the cycle.","The 600 calories stat gets a reaction. Follow it with: this is not weak willpower, it is a shifted brain.","Then close the loop backwards with caffeine, so they see it runs both ways."],
+  "Rapid-Fire Quiz":["Two teams. First to shout the letter. You control the scoreboard with the plus and minus buttons.","Reveal, then read the why line. That is where the learning is, not the score.","8 questions in 4 minutes means about 30 seconds each. Keep it moving.","If time is short, drop questions 5 and 8."],
+  "Pick Your ONE Thing":["Non-negotiable: everyone says one out loud to the person next to them. Verbal commitment roughly doubles follow-through.","Spin the wheel for anyone who cannot decide.","Do not collect these. Do not make it an assessment. The moment you grade it, it stops working."],
+  "Takeaway Card":["Leave this on screen as they pack up.","Final line to say out loud: fixing your wake time and moving your phone would put you ahead of most adults, and it costs nothing."]
+};
+
+/* ============================================================
+   DECK ENGINE
+   ============================================================ */
+const slides = Array.from(document.querySelectorAll('.slide'));
+const $ = id => document.getElementById(id);
+let cur = 0, inited = new Set();
+
+$('slideTot').textContent = slides.length;
+
+function go(i){
+  i = Math.max(0, Math.min(slides.length-1, i));
+  slides[cur].classList.remove('active');
+  cur = i;
+  const s = slides[cur];
+  s.classList.add('active');
+  s.scrollTop = 0;
+  $('slideNum').textContent = i+1;
+  $('progressBar').style.width = ((i+1)/slides.length*100)+'%';
+  const ph = $('phaseChip');
+  ph.dataset.p = s.dataset.phase || 'intro';
+  ph.textContent = s.dataset.label || '';
+  $('prevBtn').disabled = i===0;
+  $('nextBtn').disabled = i===slides.length-1;
+  resetTimer(parseFloat(s.dataset.mins||0), true);
+  const t = s.dataset.title;
+  if(!inited.has(t)){ inited.add(t); (INIT[t]||function(){})(); }
+  if($('notes').classList.contains('on')) renderNotes();
+  buildOverview();
+  runReveals(s);
+}
+function runReveals(s){
+  s.querySelectorAll('.reveal').forEach((el,k)=>{
+    el.classList.remove('on');
+    setTimeout(()=>el.classList.add('on'), 120+k*90);
+  });
+}
+$('nextBtn').onclick = ()=>go(cur+1);
+$('prevBtn').onclick = ()=>go(cur-1);
+
+/* ---------- timers ---------- */
+let tRemain=0, tRun=false, tInt=null, lRun=false, lSec=0, lInt=null;
+function fmt(s){ s=Math.max(0,Math.round(s)); const m=Math.floor(s/60); return m+':'+String(s%60).padStart(2,'0'); }
+function fmt2(s){ const m=Math.floor(s/60); return String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+function paintTimer(){
+  const c=$('timerChip');
+  $('timerTime').textContent = fmt(tRemain);
+  c.classList.toggle('run', tRun && tRemain>30);
+  c.classList.toggle('low', tRun && tRemain<=30 && tRemain>0);
+  c.classList.toggle('done', tRemain<=0);
+}
+function resetTimer(mins, auto){
+  clearInterval(tInt); tRun=false; tRemain=(mins||0)*60;
+  $('timerLbl').textContent = mins ? mins+' min' : 'Segment';
+  paintTimer();
+  if(auto && mins>0) startTimer();
+}
+function startTimer(){
+  if(tRemain<=0) return;
+  clearInterval(tInt); tRun=true; paintTimer();
+  tInt=setInterval(()=>{ tRemain--; if(tRemain<=0){ tRemain=0; clearInterval(tInt); tRun=false; } paintTimer(); },1000);
+}
+function toggleTimer(){ if(tRun){ clearInterval(tInt); tRun=false; paintTimer(); } else startTimer(); }
+$('timerChip').onclick = toggleTimer;
+$('lessonChip').onclick = ()=>{
+  if(lRun){ clearInterval(lInt); lRun=false; $('lessonChip').style.opacity=.6; }
+  else { lRun=true; $('lessonChip').style.opacity=1; lInt=setInterval(()=>{ lSec++; $('lessonTime').textContent=fmt2(lSec); },1000); }
+};
+
+/* ---------- keyboard + touch ---------- */
+document.addEventListener('keydown', e=>{
+  if(e.target.matches('input,textarea')) return;
+  const k=e.key.toLowerCase();
+  if(['arrowright','arrowdown','pagedown',' '].includes(e.key.toLowerCase())){ e.preventDefault(); go(cur+1); }
+  else if(['arrowleft','arrowup','pageup'].includes(e.key.toLowerCase())){ e.preventDefault(); go(cur-1); }
+  else if(e.key==='Home') go(0);
+  else if(e.key==='End') go(slides.length-1);
+  else if(k==='t'){ e.preventDefault(); toggleTimer(); }
+  else if(k==='r'){ resetTimer(parseFloat(slides[cur].dataset.mins||0), false); }
+  else if(k==='o'){ toggleOv('overview'); }
+  else if(k==='n'){ toggleOv('notes'); }
+  else if(k==='f'){ fullscreen(); }
+  else if(e.key==='Escape'){ document.querySelectorAll('.overlay.on').forEach(o=>o.classList.remove('on')); }
+});
+let tx=0,ty=0;
+document.addEventListener('touchstart',e=>{ tx=e.changedTouches[0].clientX; ty=e.changedTouches[0].clientY; },{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>70 && Math.abs(dx)>Math.abs(dy)*1.6) go(cur + (dx<0?1:-1));
+},{passive:true});
+
+/* ---------- overlays ---------- */
+function toggleOv(id){
+  const o=$(id), was=o.classList.contains('on');
+  document.querySelectorAll('.overlay.on').forEach(x=>x.classList.remove('on'));
+  if(!was){ o.classList.add('on'); if(id==='notes') renderNotes(); if(id==='overview') buildOverview(); }
+}
+$('overviewBtn').onclick=()=>toggleOv('overview');
+$('notesBtn').onclick=()=>toggleOv('notes');
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).classList.remove('on'));
+function fullscreen(){ if(!document.fullscreenElement) document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+$('fsBtn').onclick=fullscreen;
+
+function buildOverview(){
+  let mins=0;
+  $('ovGrid').innerHTML = slides.map((s,i)=>{
+    const start=mins; mins+=parseFloat(s.dataset.mins||0);
+    return `<button class="ovcard ${i===cur?'cur':''}" data-i="${i}">
+      <div class="n">${String(i+1).padStart(2,'0')} &middot; ${start}-${mins} MIN</div>
+      <div class="t">${s.dataset.title}</div>
+      <div class="m">${s.dataset.label} &middot; ${s.dataset.mins} min</div></button>`;
+  }).join('');
+  $('ovGrid').querySelectorAll('.ovcard').forEach(b=>b.onclick=()=>{ go(+b.dataset.i); $('overview').classList.remove('on'); });
+}
+function renderNotes(){
+  const t=slides[cur].dataset.title;
+  $('notesTitle').textContent = t;
+  const n=NOTES[t]||["No notes for this slide."];
+  $('notesBody').innerHTML = `<div class="card"><div class="eyebrow">Slide ${cur+1} &middot; ${slides[cur].dataset.mins} minutes</div><ul style="margin-top:10px">${n.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+}
+
+/* ============================================================
+   SLIDE BUILDERS
+   ============================================================ */
+const INIT = {};
+
+/* ---- 2. Myths ---- */
+INIT["Stand-Up Myth Buster"] = ()=>{
+  $('mythGrid').innerHTML = MYTHS.map((m,i)=>`
+    <div class="myth" data-i="${i}">
+      <span class="tapme">TAP TO REVEAL</span>
+      <div class="qn">Claim ${i+1}</div>
+      <div class="claim">${m.claim}</div>
+      <div class="verdict">
+        <span class="badge ${m.truth?'t':'f'}">${m.truth?'True':'False'}</span>
+        <div class="why">${m.why}</div>
+      </div>
+    </div>`).join('');
+  $('mythGrid').querySelectorAll('.myth').forEach(el=>el.onclick=()=>el.classList.toggle('open'));
+};
+
+/* ---- 3. Hypnogram ---- */
+INIT["The Night Shift"] = ()=>{
+  const W=760,H=300,PL=64,PR=16,PT=16,PB=40;
+  const lv={awake:0,rem:1,n1:2,n2:3,n3:4};
+  const seq=[["awake",0,.15],["n1",.15,.35],["n2",.35,.9],["n3",.9,1.7],["n2",1.7,1.9],["rem",1.9,2.2],
+    ["n2",2.2,2.7],["n3",2.7,3.4],["n2",3.4,3.7],["rem",3.7,4.2],["awake",4.2,4.3],
+    ["n2",4.3,4.9],["n3",4.9,5.2],["n2",5.2,5.6],["rem",5.6,6.3],
+    ["n2",6.3,6.7],["rem",6.7,7.4],["n2",7.4,7.6],["rem",7.6,8],["awake",8,8.15]];
+  const X=h=>PL+(h/8.15)*(W-PL-PR), Y=l=>PT+(l/4)*(H-PT-PB)+14;
+  let path=''; let prev=null;
+  seq.forEach(([s,a,b])=>{
+    const y=Y(lv[s]);
+    if(prev!==null) path+=`L${X(a).toFixed(1)},${y.toFixed(1)} `;
+    else path+=`M${X(a).toFixed(1)},${y.toFixed(1)} `;
+    path+=`L${X(b).toFixed(1)},${y.toFixed(1)} `;
+    prev=y;
+  });
+  const bands=seq.map(([s,a,b])=>`<rect class="hb" data-s="${s}" x="${X(a)}" y="${Y(lv[s])-9}" width="${Math.max(2,X(b)-X(a))}" height="18" rx="4" fill="${STAGES.find(x=>x.id===s).color}" opacity=".85"/>`).join('');
+  const rows=STAGES.map(s=>`<text x="${PL-10}" y="${Y(lv[s.id])+5}" text-anchor="end" fill="#a3a4c2" font-size="13" font-weight="700">${s.id.toUpperCase()}</text>
+    <line x1="${PL}" y1="${Y(lv[s.id])}" x2="${W-PR}" y2="${Y(lv[s.id])}" stroke="rgba(255,255,255,.07)"/>`).join('');
+  const hrs=[0,1,2,3,4,5,6,7,8].map(h=>`<text x="${X(h)}" y="${H-14}" text-anchor="middle" fill="#7b7c99" font-size="12">${h}h</text>`).join('');
+  $('hypnoBox').innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+    <text x="${PL}" y="${H-1}" fill="#7b7c99" font-size="11">Hours after falling asleep. Deep sleep front-loads, dream sleep back-loads.</text>
+    ${rows}${hrs}
+    <path d="${path}" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="2"/>
+    ${bands}</svg>`;
+  $('stageBtns').innerHTML = STAGES.map(s=>`<button class="stagebtn" data-s="${s.id}"><span class="dot" style="background:${s.color}"></span>${s.name}</button>`).join('');
+  function pick(id){
+    const s=STAGES.find(x=>x.id===id);
+    $('stageTitle').textContent=s.name;
+    $('stageText').innerHTML=s.text;
+    $('stageText').classList.remove('muted');
+    $('stageBtns').querySelectorAll('.stagebtn').forEach(b=>b.classList.toggle('sel',b.dataset.s===id));
+    document.querySelectorAll('#hypnoBox .hb').forEach(r=>r.setAttribute('opacity', r.dataset.s===id?'1':'.2'));
+  }
+  $('stageBtns').querySelectorAll('.stagebtn').forEach(b=>b.onclick=()=>pick(b.dataset.s));
+  document.querySelectorAll('#hypnoBox .hb').forEach(r=>{ r.style.cursor='pointer'; r.onclick=()=>pick(r.dataset.s); });
+};
+
+/* ---- 4. Cases ---- */
+INIT["Sleep Detective"] = ()=>{
+  $('caseGrid').innerHTML = CASES.map((c,i)=>`
+    <div class="case" data-i="${i}">
+      <span class="tapme">TAP</span>
+      <div class="who">${c.who}</div>
+      <div class="facts">${c.facts}</div>
+      <div class="dx"><div class="dxh">${c.dx}</div><div class="fix">${c.fix}</div></div>
+    </div>`).join('');
+  $('caseGrid').querySelectorAll('.case').forEach(el=>el.onclick=()=>el.classList.toggle('open'));
+};
+
+/* ---- 5. Body clock ---- */
+INIT["Teen Body Clock"] = ()=>{
+  const W=760,H=310,PL=50,PR=20,PT=24,PB=44;
+  const X=h=>PL+((h-16)/16)*(W-PL-PR);
+  const Y=v=>H-PB-v*(H-PT-PB);
+  function mel(h,shift){
+    const on=21+shift;
+    const x=h<on? 0 : Math.min(1,(h-on)/2.2);
+    const off=(shift?9.5:7.5)+24;
+    const dec=h>off-24+24? 1 : 1;
+    let v=x;
+    if(h>=(shift?7.5:6)+24) v=0;
+    return Math.max(0,Math.min(1,v));
+  }
+  function curve(shift,col,id){
+    const pts=[];
+    for(let h=16;h<=32;h+=.25){
+      const on=21+shift, offh=(shift?8.5:7);
+      let v;
+      if(h<on) v=.03;
+      else if(h<on+2.5) v=.03+.92*((h-on)/2.5);
+      else if(h<24+offh-1.5) v=.95;
+      else if(h<24+offh+1.5) v=.95*(1-((h-(24+offh-1.5))/3));
+      else v=.03;
+      pts.push([X(h),Y(Math.max(.03,v))]);
+    }
+    return `<path id="${id}" d="${pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="${col}" stroke-width="3.5" stroke-linecap="round"/>`;
+  }
+  const ticks=[16,18,20,22,24,26,28,30,32].map(h=>{
+    const lab=h<24?(h>12?(h-12)+'pm':h+'am'):((h-24)===0?'12am':(h-24)+'am');
+    return `<text x="${X(h)}" y="${H-20}" text-anchor="middle" fill="#7b7c99" font-size="12">${lab}</text>
+    <line x1="${X(h)}" y1="${PT}" x2="${X(h)}" y2="${H-PB}" stroke="rgba(255,255,255,.05)"/>`;
+  }).join('');
+  $('clockBox').innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+    ${ticks}
+    <line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="rgba(255,255,255,.2)"/>
+    <text x="${PL}" y="${PT-6}" fill="#a3a4c2" font-size="13" font-weight="700">Melatonin (the "it is night" signal)</text>
+    ${curve(0,'#a3a4c2','adultC')}
+    ${curve(2,'#8b7bff','teenC')}
+    <line id="schoolLine" x1="${X(30.5)}" y1="${PT}" x2="${X(30.5)}" y2="${H-PB}" stroke="#ffb020" stroke-width="2.5" stroke-dasharray="7 5" style="transition:all .7s"/>
+    <text id="schoolLbl" x="${X(30.5)+7}" y="${PT+16}" fill="#ffd784" font-size="13" font-weight="800" style="transition:all .7s">School starts</text>
+    <circle cx="${W-190}" cy="${PT+6}" r="5" fill="#a3a4c2"/><text x="${W-178}" y="${PT+11}" fill="#a3a4c2" font-size="13" font-weight="700">Adult / child</text>
+    <circle cx="${W-190}" cy="${PT+26}" r="5" fill="#8b7bff"/><text x="${W-178}" y="${PT+31}" fill="#c3b8ff" font-size="13" font-weight="700">Teenager</text>
+  </svg>`;
+  let late=false;
+  $('schoolToggle').onclick=()=>{
+    late=!late;
+    const h= late?32:30.5;
+    $('schoolLine').setAttribute('x1',X(h)); $('schoolLine').setAttribute('x2',X(h));
+    $('schoolLbl').setAttribute('x',X(h)+7);
+    $('schoolLbl').textContent = late?'10am start':'School starts';
+    $('schoolToggle').textContent = late?'Back to an 8:30am start':'What if school started at 10am?';
+    $('clockNote').innerHTML = late
+      ? 'When Seattle moved high school start times from 7:50am to 8:45am, students gained around <b>34 minutes</b> of sleep a night and grades went up. The teenage melatonin curve finally lined up with the alarm.'
+      : 'Melatonin is the hormone that tells your brain it is night. Curves shown are typical patterns, not exact values.';
+  };
+};
+
+/* ---- 6. Sleep debt ---- */
+INIT["Sleep Debt Calculator"] = ()=>{
+  // All times live on one continuous timeline in hours, starting at 7pm = 19.
+  const evening=i=>19+i*0.25;      // 7:00pm to 4:00am
+  const morning=i=>29+i*0.25;      // 5:00am to 11:00am (24 + 5)
+  const lab=h=>{ const hh=Math.floor(h)%24, mm=Math.round((h%1)*60); const ap=hh<12?'am':'pm'; let d=hh%12; if(d===0)d=12; return d+':'+String(mm).padStart(2,'0')+' '+ap; };
+  const mins=h=>Math.round(h*60);
+  const plural=(n,w)=>n+' '+w+(Math.abs(n-1)<0.001?'':'s');
+
+  function upd(){
+    const bed   = evening(+$('bedSlider').value);
+    const alarm = morning(+$('wakeSlider').value);
+    const lat   = +$('latSlider').value/60;
+    // Order is forced: you cannot put the phone down before you got into bed,
+    // and the light cannot go off before the phone does.
+    const phone = Math.min(Math.max(evening(+$('phoneSlider').value), bed), alarm);
+    const light = Math.min(Math.max(evening(+$('lightSlider').value), phone), alarm);
+    const asleep= Math.min(light+lat, alarm);
+
+    $('bedVal').textContent   = lab(bed);
+    $('phoneVal').textContent = lab(phone);
+    $('lightVal').textContent = lab(light);
+    $('latVal').textContent   = (+$('latSlider').value)+' min';
+    $('wakeVal').textContent  = lab(alarm);
+    $('nbRange').innerHTML    = lab(bed)+' &rarr; '+lab(alarm);
+
+    const perceived = alarm - bed;              // what you would tell someone
+    const real      = Math.max(0, alarm-asleep); // what you actually got
+    const gapMin    = mins(perceived-real);
+    const phoneMin  = mins(phone-bed);
+    const awakeMin  = mins(asleep-phone);
+    const sleepMin  = mins(alarm-asleep);
+
+    $('perceivedOut').textContent = perceived.toFixed(1);
+    $('hrsOut').textContent       = real.toFixed(1);
+    $('gapOut').textContent       = gapMin;
+    $('debtOut').textContent      = (Math.max(0,8-real)*5).toFixed(1);
+
+    // night bar
+    const segs=[
+      ['phone', phoneMin, phoneMin>=35 ? phoneMin+' min on the phone' : (phoneMin>=12?phoneMin+' min':'')],
+      ['awake', awakeMin, awakeMin>=35 ? awakeMin+' min awake'        : (awakeMin>=12?awakeMin+' min':'')],
+      ['sleep', sleepMin, sleepMin>=60 ? real.toFixed(1)+' hrs asleep': (sleepMin>=20?sleepMin+' min':'')]
+    ];
+    $('nightBar').innerHTML = segs.filter(s=>s[1]>0)
+      .map(s=>`<div class="nbseg ${s[0]}" style="flex:${s[1]} 0 0">${s[2]}</div>`).join('')
+      || '<div class="nbseg awake" style="flex:1">No sleep at all in this scenario</div>';
+
+    // yearly maths
+    const yrPhoneH = Math.round(phoneMin*365/60);
+    $('yrPhoneH').textContent = plural(yrPhoneH,'hour');
+    const yrPhoneD = yrPhoneH/24;
+    $('yrPhoneD').textContent = (yrPhoneD>=10 ? Math.round(yrPhoneD) : yrPhoneD.toFixed(1))+' full days';
+    $('yrSchool').textContent = Math.round(yrPhoneH/6)+' school days';
+    const nights = Math.max(0,8-real)*365/8;
+    $('yrNights').textContent = nights<0.5 ? 'No nights' : plural(Math.round(nights),'full night');
+
+    let t,x;
+    const wk=(Math.max(0,8-real)*5).toFixed(1);
+    if(real>=8.5){ t='You are in the zone'; x='Genuinely rare for Year 10. Whatever you are doing, protect it, especially the consistency of that wake time.'; }
+    else if(real>=8){ t='Just scraping in'; x='Bottom edge of the 8 to 10 hour range. It holds up until one late night or one assessment week, and then there is nothing left in the tank.'; }
+    else if(real>=7){ t='A slow leak'; x='About '+wk+' hours short every school week. This is the range where you feel basically fine while your reaction time, mood control and memory are all quietly worse.'; }
+    else if(real>=6){ t='Running a real deficit'; x='Around '+wk+' hours short a week. At 6 hours a night for two weeks, measured performance drops to roughly the same level as two nights with no sleep.'; }
+    else { t='This is not sustainable'; x='Roughly '+wk+' hours short every week. At this level you are not choosing to be tired, you are losing the ability to tell how impaired you are.'; }
+    if(phoneMin>=60) x += ' And '+phoneMin+' minutes of that night was the phone, not sleep.';
+    $('dvTitle').textContent=t; $('dvText').textContent=x; $('dvText').classList.remove('muted');
+  }
+  ['bedSlider','phoneSlider','lightSlider','latSlider','wakeSlider'].forEach(id=>$(id).addEventListener('input',upd));
+  upd();
+};
+
+/* ---- 7. Wind-down ---- */
+INIT["Build the Wind-Down"] = ()=>{
+  let armed=null, placed=new Array(5).fill(null);
+  function drawSlots(){
+    $('wdSlots').innerHTML = WD_SLOTS.map((s,i)=>{
+      const p=placed[i]!==null?WD_OPTS[placed[i]]:null;
+      return `<div class="slot ${p?'filled':''} ${armed!==null&&!p?'armed':''} ${p?(p.v>0?'good':'bad'):''}" data-i="${i}">
+        <div class="st">${s}</div>
+        <div class="sv">${p?p.t:'&mdash;'}</div>
+        <div class="fb">${p?('<b style="color:'+(p.v>0?'#3ddc97':'#ff5c7a')+'">'+(p.v>0?'+':'')+p.v+'</b> '+p.f):''}</div>
+      </div>`;
+    }).join('');
+    $('wdSlots').querySelectorAll('.slot').forEach(el=>el.onclick=()=>{
+      const i=+el.dataset.i;
+      if(armed!==null){ placed[i]=armed; armed=null; }
+      else if(placed[i]!==null){ placed[i]=null; }
+      draw();
+    });
+  }
+  function drawOpts(){
+    $('wdOpts').innerHTML = WD_OPTS.map((o,i)=>
+      `<button class="opt ${armed===i?'armed':''} ${placed.includes(i)?'used':''}" data-i="${i}">${o.t}</button>`).join('');
+    $('wdOpts').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ armed = armed===+b.dataset.i?null:+b.dataset.i; draw(); });
+  }
+  function draw(){ drawSlots(); drawOpts(); }
+  $('wdScore').onclick=()=>{
+    const filled=placed.filter(p=>p!==null);
+    if(filled.length<5){ $('wdMsg').textContent='Fill all five slots first. You have '+filled.length+' of 5.'; return; }
+    const tot=filled.reduce((a,i)=>a+WD_OPTS[i].v,0);
+    $('wdTotal').textContent=tot;
+    $('wdSlots').querySelectorAll('.slot').forEach(el=>el.classList.add('scored'));
+    let m;
+    if(tot>=11) m='Near perfect. You found that the phone card and the consistent bedtime are worth more than everything else combined.';
+    else if(tot>=8) m='Strong routine. Check whether you took the phone out of the room. That one card is worth more than any two others.';
+    else if(tot>=4) m='Decent, but something in there is working against you. Look for the red slots.';
+    else if(tot>=0) m='This routine is fighting itself. The good habits cannot outrun a late energy drink or a scroll in bed.';
+    else m='This is a routine designed to keep someone awake. Which is exactly what a normal Tuesday night looks like for a lot of people.';
+    $('wdMsg').textContent=m;
+  };
+  $('wdReset').onclick=()=>{ placed=new Array(5).fill(null); armed=null; $('wdTotal').textContent='0'; $('wdMsg').textContent=''; draw(); };
+  draw();
+};
+
+/* ---- 9. Crash test ---- */
+INIT["Crash Test"] = ()=>{
+  const W=740,H=340,PL=52,PR=22,PT=22,PB=44;
+  const X=i=>PL+(i/(CURVE_HOURS.length-1))*(W-PL-PR);
+  const Y=v=>PT+(1-v/100)*(H-PT-PB);
+  const grid=CURVE_HOURS.map((h,i)=>`<text x="${X(i)}" y="${H-18}" text-anchor="middle" fill="#7b7c99" font-size="11">${h}</text>
+    <line x1="${X(i)}" y1="${PT}" x2="${X(i)}" y2="${H-PB}" stroke="rgba(255,255,255,.05)"/>`).join('');
+  const paths=BREAKFASTS.map((b,i)=>{
+    const d=b.pts.map((p,j)=>(j?'L':'M')+X(j).toFixed(1)+','+Y(p).toFixed(1)).join(' ');
+    return `<path class="curve hide" id="cv${i}" d="${d}" fill="none" stroke="${b.c}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }).join('');
+  $('curveBox').innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+    ${grid}
+    <line x1="${PL}" y1="${Y(58)}" x2="${W-PR}" y2="${Y(58)}" stroke="rgba(255,255,255,.22)" stroke-dasharray="5 5"/>
+    <text x="${W-PR}" y="${Y(58)-7}" text-anchor="end" fill="#7b7c99" font-size="11">where you started</text>
+    <rect x="${X(5)}" y="${PT}" width="${X(7)-X(5)}" height="${H-PT-PB}" fill="rgba(255,92,122,.07)"/>
+    <text x="${(X(5)+X(7))/2}" y="${PT+15}" text-anchor="middle" fill="#ff8fa3" font-size="11" font-weight="700">periods 3 &amp; 4</text>
+    <text x="${PL}" y="${PT-6}" fill="#a3a4c2" font-size="12" font-weight="700">Steady focus and energy &rarr;</text>
+    <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="rgba(255,255,255,.2)"/>
+    <line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="rgba(255,255,255,.2)"/>
+    ${paths}</svg>`;
+  $('breakfastList').innerHTML=BREAKFASTS.map((b,i)=>
+    `<button class="tile" data-i="${i}"><span class="pick">&#10003;</span>
+      <span class="tn"><span class="dot" style="background:${b.c}"></span>${b.n}</span>
+      <span class="tm">${b.m}</span></button>`).join('');
+  $('curveLegend').innerHTML=BREAKFASTS.map((b,i)=>
+    `<button class="lg off" data-i="${i}"><i style="background:${b.c}"></i>${b.n}</button>`).join('');
+  function toggle(i,force){
+    const p=$('cv'+i), on = force!==undefined?force:p.classList.contains('hide');
+    p.classList.toggle('hide',!on);
+    if(on){ p.classList.remove('draw'); void p.offsetWidth; p.classList.add('draw'); }
+    $('breakfastList').querySelector(`[data-i="${i}"]`).classList.toggle('sel',on);
+    $('curveLegend').querySelector(`[data-i="${i}"]`).classList.toggle('off',!on);
+  }
+  $('breakfastList').querySelectorAll('.tile').forEach(b=>b.onclick=()=>toggle(+b.dataset.i));
+  $('curveLegend').querySelectorAll('.lg').forEach(b=>b.onclick=()=>toggle(+b.dataset.i));
+  $('raceAll').onclick=()=>{ BREAKFASTS.forEach((_,i)=>{ toggle(i,false); setTimeout(()=>toggle(i,true), 90*i); }); };
+};
+
+/* ---- 10. Big four ---- */
+INIT["The Big Four"] = ()=>{
+  $('bigFour').innerHTML=BIG_FOUR.map((b,i)=>`
+    <div class="case" data-i="${i}" style="border-top:4px solid ${b.col}">
+      <span class="tapme">TAP</span>
+      <div class="who" style="color:${b.col}">${b.k}</div>
+      <div class="facts" style="font-weight:750">${b.hook}</div>
+      <div class="dx"><div class="fix">${b.body}</div><div class="fix" style="border-top:1px solid rgba(255,255,255,.12);padding-top:9px"><b style="color:${b.col}">Where to get it:</b> ${b.do}</div></div>
+    </div>`).join('');
+  $('bigFour').querySelectorAll('.case').forEach(el=>el.onclick=()=>el.classList.toggle('open'));
+};
+
+/* ---- 11. Fuel build ---- */
+INIT["Fuel Build Challenge"] = ()=>{
+  let picks=[];
+  const KEYS=[['steady','Steady energy',9],['iron','Iron',6],['calcium','Calcium',5],['omega','Brain fats',4],['fibre','Fibre',8],['water','Fluid',4]];
+  $('foodGrid').innerHTML=FOODS.map((f,i)=>{
+    const tags=Object.entries(f.s).filter(([k,v])=>v>0&&k!=='crash'&&k!=='vitc').map(([k])=>k).join(' &middot; ');
+    return `<button class="tile" data-i="${i}"><span class="pick">&#10003;</span>
+      <span class="tn">${f.n}</span><span class="tm">${tags||'not much in it'}</span></button>`;
+  }).join('');
+  function calc(){
+    const tot={steady:0,iron:0,calcium:0,omega:0,fibre:0,water:0,crash:0};
+    let vitc=false, plantIron=false;
+    picks.forEach(i=>{
+      const f=FOODS[i];
+      for(const k in f.s){ if(k==='vitc') vitc=true; else tot[k]=(tot[k]||0)+f.s[k]; }
+      if(PLANT_IRON.includes(f.n)) plantIron=true;
+    });
+    let bonus=0;
+    if(vitc&&plantIron){ tot.iron+=2; bonus=1; }
+    KEYS.forEach(([k,,max])=>{
+      const v=Math.max(0,tot[k]||0), pct=Math.min(100,v/max*100);
+      $('m-'+(k==='omega'?'omega':k)).style.width=pct+'%';
+      $('m-'+(k==='omega'?'omega':k)).className='mfill'+(pct<34?' low':pct<67?' mid':'');
+      $('mv-'+(k==='omega'?'omega':k)).textContent=v;
+    });
+    const cr=Math.max(0,tot.crash);
+    $('m-crash').style.width=Math.min(100,cr/6*100)+'%';
+    $('mv-crash').textContent=cr;
+    let score=0;
+    KEYS.forEach(([k,,max])=>{ score += Math.min(1,Math.max(0,tot[k]||0)/max)*(100/6); });
+    score -= cr*6;
+    score=Math.max(0,Math.min(100,Math.round(score)));
+    $('fuelScore').textContent=picks.length===6?score:0;
+    $('pickCount').textContent=picks.length;
+    if(picks.length<6){
+      $('fuelFeedback').innerHTML=`<p class="muted">Pick ${6-picks.length} more to get your team's verdict.</p>`;
+      return;
+    }
+    const gaps=KEYS.filter(([k,,max])=>(tot[k]||0)/max<0.34).map(([,n])=>n.toLowerCase());
+    let fb='';
+    if(score>=80) fb='<h3 style="color:var(--good)">Excellent day</h3><p style="margin-top:8px">Balanced across every meter with almost no crash risk. This is what a day that carries you to period 6 actually looks like.</p>';
+    else if(score>=60) fb='<h3 style="color:var(--warn)">Solid, with a hole in it</h3><p style="margin-top:8px">Good foundations. You are short on: <b>'+(gaps.join(', ')||'nothing major')+'</b>.</p>';
+    else if(score>=35) fb='<h3 style="color:var(--warn)">Half a day</h3><p style="margin-top:8px">Either you have gaps or you have crash risk dragging you down. Missing: <b>'+(gaps.join(', ')||'balance')+'</b>.</p>';
+    else fb='<h3 style="color:var(--bad)">This day ends at 1pm</h3><p style="margin-top:8px">High crash risk and big gaps. You would be running on nothing by period 4. Missing: <b>'+(gaps.join(', ')||'most things')+'</b>.</p>';
+    if(bonus) fb+='<p style="margin-top:10px;color:var(--good);font-weight:700">Hidden bonus found: you paired a vitamin C food with a plant iron source. That can multiply iron absorption several times over. +2 iron.</p>';
+    else if(picks.some(i=>PLANT_IRON.includes(FOODS[i].n))) fb+='<p style="margin-top:10px;color:var(--fuel2);font-weight:700">You have a plant iron source but no vitamin C with it. There is a hidden bonus you are missing.</p>';
+    $('fuelFeedback').innerHTML=fb;
+  }
+  $('foodGrid').querySelectorAll('.tile').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i;
+    if(picks.includes(i)) picks=picks.filter(x=>x!==i);
+    else if(picks.length<6) picks.push(i);
+    else return;
+    b.classList.toggle('sel',picks.includes(i));
+    calc();
+  });
+  $('foodReset').onclick=()=>{ picks=[]; $('foodGrid').querySelectorAll('.tile').forEach(b=>b.classList.remove('sel')); calc(); };
+  calc();
+};
+
+/* ---- 12. Loop ---- */
+INIT["The Domino Effect"] = ()=>{
+  const W=560,H=380,cx=280,cy=190,r=125;
+  const nodes=[
+    {t:"Short sleep",s:"under 8 hours"},
+    {t:"Hunger hormones shift",s:"ghrelin up, leptin down"},
+    {t:"Reward brain louder,\ndecision brain quieter",s:""},
+    {t:"You want fast sugar\nand caffeine",s:""},
+    {t:"Energy spike,\nthen a bigger dip",s:""},
+    {t:"Caffeine and late food\ndisrupt tonight's sleep",s:""}
+  ];
+  const ang=i=>(-90+i*60)*Math.PI/180;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
+  for(let i=0;i<6;i++){
+    const a1=ang(i)+.34, a2=ang(i+1)-.34;
+    svg+=`<path class="loopArc" id="arc${i}" d="M${(cx+r*Math.cos(a1)).toFixed(1)},${(cy+r*Math.sin(a1)).toFixed(1)} A${r},${r} 0 0 1 ${(cx+r*Math.cos(a2)).toFixed(1)},${(cy+r*Math.sin(a2)).toFixed(1)}" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="3" marker-end="url(#ah)"/>`;
+  }
+  svg+=`<defs><marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="rgba(255,255,255,.4)"/></marker></defs>`;
+  nodes.forEach((n,i)=>{
+    const x=cx+r*Math.cos(ang(i)), y=cy+r*Math.sin(ang(i));
+    const lines=n.t.split('\n');
+    svg+=`<g class="loopNode" id="ln${i}" opacity=".35" style="transition:opacity .4s">
+      <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="34" fill="${i===0?'rgba(139,123,255,.3)':'rgba(255,255,255,.08)'}" stroke="${i===0?'#8b7bff':'rgba(255,255,255,.22)'}" stroke-width="2"/>
+      <text x="${x.toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="middle" font-size="15" font-weight="800" fill="#f2f2fa">${i+1}</text>
+      ${lines.map((l,k)=>`<text x="${x.toFixed(1)}" y="${(y+52+k*15).toFixed(1)}" text-anchor="middle" font-size="12.5" font-weight="700" fill="#dedff0">${l}</text>`).join('')}
+      ${n.s?`<text x="${x.toFixed(1)}" y="${(y+52+lines.length*15).toFixed(1)}" text-anchor="middle" font-size="11" fill="#a3a4c2">${n.s}</text>`:''}
+    </g>`;
+  });
+  svg+=`<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="15" font-weight="850" fill="#a3a4c2">THE LOOP</text>
+        <text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="12" fill="#7b7c99">it feeds itself</text></svg>`;
+  $('loopBox').innerHTML=svg;
+  $('loopRun').onclick=()=>{
+    document.querySelectorAll('#loopBox .loopNode').forEach(n=>n.setAttribute('opacity','.2'));
+    document.querySelectorAll('#loopBox .loopArc').forEach(a=>a.setAttribute('stroke','rgba(255,255,255,.1)'));
+    for(let i=0;i<6;i++){
+      setTimeout(()=>{
+        $('ln'+i).setAttribute('opacity','1');
+        if(i>0)$('arc'+(i-1)).setAttribute('stroke','#ffb020');
+        if(i===5) setTimeout(()=>$('arc5').setAttribute('stroke','#ff5c7a'),500);
+      }, 520*i);
+    }
+  };
+};
+
+/* ---- 13. Quiz ---- */
+INIT["Rapid-Fire Quiz"] = ()=>{
+  let qi=0, sa=0, sb=0;
+  function draw(){
+    const q=QUIZ[qi];
+    $('qIdx').textContent=qi+1;
+    $('qText').textContent=q.q;
+    $('qOpts').innerHTML=q.o.map((o,i)=>
+      `<button class="qopt" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${o}</span></button>`).join('');
+    $('qOpts').querySelectorAll('.qopt').forEach(b=>b.onclick=()=>reveal());
+    $('qWhy').innerHTML=''; $('qWhy').classList.remove('on');
+    $('qPrev').disabled=qi===0;
+    $('qNext').textContent = qi===QUIZ.length-1?'Finish':'Next question';
+  }
+  function reveal(){
+    const q=QUIZ[qi];
+    $('qOpts').querySelectorAll('.qopt').forEach((b,i)=>b.classList.add(i===q.a?'right':'wrong'));
+    $('qWhy').innerHTML='<b style="color:var(--good)">Why:</b> '+q.why;
+    setTimeout(()=>$('qWhy').classList.add('on'),40);
+  }
+  $('qReveal').onclick=reveal;
+  $('qNext').onclick=()=>{ if(qi<QUIZ.length-1){ qi++; draw(); } else go(cur+1); };
+  $('qPrev').onclick=()=>{ if(qi>0){ qi--; draw(); } };
+  document.querySelectorAll('[data-sc]').forEach(b=>b.onclick=()=>{
+    const v=b.dataset.sc;
+    if(v==='a+')sa++; if(v==='a-')sa=Math.max(0,sa-1);
+    if(v==='b+')sb++; if(v==='b-')sb=Math.max(0,sb-1);
+    $('scoreA').textContent=sa; $('scoreB').textContent=sb;
+  });
+  draw();
+};
+
+/* ---- 14. Pledge wheel ---- */
+INIT["Pick Your ONE Thing"] = ()=>{
+  const n=PLEDGES.length, seg=360/n, R=185, C=200;
+  const cols=['#8b7bff','#ffb020','#3ddc97','#4dd0e1','#ff8a3d','#c3b8ff'];
+  let svg='';
+  for(let i=0;i<n;i++){
+    const a1=(i*seg-90)*Math.PI/180, a2=((i+1)*seg-90)*Math.PI/180;
+    svg+=`<path d="M${C},${C} L${(C+R*Math.cos(a1)).toFixed(1)},${(C+R*Math.sin(a1)).toFixed(1)} A${R},${R} 0 0 1 ${(C+R*Math.cos(a2)).toFixed(1)},${(C+R*Math.sin(a2)).toFixed(1)} Z" fill="${cols[i%cols.length]}" opacity=".82" stroke="#0a0b16" stroke-width="2"/>`;
+    const am=((i+.5)*seg-90)*Math.PI/180;
+    svg+=`<text x="${(C+R*.62*Math.cos(am)).toFixed(1)}" y="${(C+R*.62*Math.sin(am)).toFixed(1)}" text-anchor="middle" font-size="24" font-weight="850" fill="#0a0b16" transform="rotate(${(i+.5)*seg} ${(C+R*.62*Math.cos(am)).toFixed(1)} ${(C+R*.62*Math.sin(am)).toFixed(1)})">${i+1}</text>`;
+  }
+  svg+=`<circle cx="${C}" cy="${C}" r="40" fill="#0a0b16" stroke="rgba(255,255,255,.2)" stroke-width="2"/>
+        <text x="${C}" y="${C+6}" text-anchor="middle" font-size="17" font-weight="850" fill="#f2f2fa">SPIN</text>`;
+  $('wheel').innerHTML=svg;
+  let rot=0, spinning=false;
+  function land(i){
+    $('pledgeText').textContent=PLEDGES[i].t;
+    $('pledgeWhy').textContent=PLEDGES[i].w;
+  }
+  function spin(){
+    if(spinning) return; spinning=true;
+    const i=Math.floor(Math.random()*n);
+    const target = 360*6 - (i*seg + seg/2);
+    rot = target;
+    $('wheel').style.transform=`rotate(${rot}deg)`;
+    setTimeout(()=>{ land(i); spinning=false; $('wheel').style.transition='none'; $('wheel').style.transform=`rotate(${rot%360}deg)`;
+      requestAnimationFrame(()=>{ $('wheel').style.transition='transform 4.4s cubic-bezier(.15,.85,.15,1)'; }); },4450);
+  }
+  $('spinBtn').onclick=spin;
+  $('wheel').style.cursor='pointer';
+  $('wheel').onclick=spin;
+  $('pledgeList').onclick=()=>{
+    const box=$('pledgeOut');
+    box.innerHTML='<div class="eyebrow">All 12 options</div><div style="margin-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
+      PLEDGES.map((p,i)=>`<div style="font-size:clamp(11px,1vw,15px);line-height:1.35"><b style="color:var(--fuel2)">${i+1}.</b> ${p.t}</div>`).join('')+'</div>';
+  };
+};
+
+/* ---- boot ---- */
+buildOverview();
+go(0);
+$('lessonChip').style.opacity=.6;
+</script>
+</body>
+</html>
