@@ -538,6 +538,7 @@ input[type=range]::-moz-range-thumb{
     <div class="body-area cols c-2-1">
       <div class="card glow" style="display:flex;flex-direction:column;gap:10px;min-height:0">
         <div class="chartbox" id="clockBox"></div>
+        <div class="legend" id="clockLegend"></div>
         <div class="row">
           <button class="bigbtn s" id="schoolToggle">What if school started at 10am?</button>
           <span class="muted src" id="clockNote">Melatonin is the hormone that tells your brain it is night. Curves shown are typical patterns, not exact values.</span>
@@ -700,7 +701,7 @@ input[type=range]::-moz-range-thumb{
       <div class="card glow" style="display:flex;flex-direction:column;gap:10px;min-height:0">
         <div class="chartbox" id="curveBox"></div>
         <div class="legend" id="curveLegend"></div>
-        <p class="src">Simplified model based on glycaemic response and satiety research. It shows the <i>shape</i> of the day, not exact blood glucose. The pattern (fast spike then a dip below where you started) is well documented.</p>
+        <p class="src">Every curve assumes a normal recess and lunch, marked on the chart. This isolates what breakfast alone does to the day. Simplified model based on glycaemic response and satiety research: it shows the <i>shape</i> of the day, not exact blood glucose. The pattern (fast spike then a dip below where you started) is well documented.</p>
       </div>
     </div>
   </section>
@@ -1265,18 +1266,10 @@ INIT["Sleep Detective"] = ()=>{
 
 /* ---- 5. Body clock ---- */
 INIT["Teen Body Clock"] = ()=>{
-  const W=760,H=310,PL=50,PR=20,PT=24,PB=44;
+  const W=760,H=340,PL=50,PR=20,PT=34,PB=66;
   const X=h=>PL+((h-16)/16)*(W-PL-PR);
   const Y=v=>H-PB-v*(H-PT-PB);
-  function mel(h,shift){
-    const on=21+shift;
-    const x=h<on? 0 : Math.min(1,(h-on)/2.2);
-    const off=(shift?9.5:7.5)+24;
-    const dec=h>off-24+24? 1 : 1;
-    let v=x;
-    if(h>=(shift?7.5:6)+24) v=0;
-    return Math.max(0,Math.min(1,v));
-  }
+  const clampX=x=>Math.max(PL+58,Math.min(W-PR-58,x));
   function curve(shift,col,id){
     const pts=[];
     for(let h=16;h<=32;h+=.25){
@@ -1291,28 +1284,31 @@ INIT["Teen Body Clock"] = ()=>{
     }
     return `<path id="${id}" d="${pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="${col}" stroke-width="3.5" stroke-linecap="round"/>`;
   }
+  // Two rows below the axis: hour labels, then (further down) the school-start label. Nothing sits inside the plot area.
   const ticks=[16,18,20,22,24,26,28,30,32].map(h=>{
     const lab=h<24?(h>12?(h-12)+'pm':h+'am'):((h-24)===0?'12am':(h-24)+'am');
-    return `<text x="${X(h)}" y="${H-20}" text-anchor="middle" fill="#7b7c99" font-size="12">${lab}</text>
+    return `<text x="${X(h)}" y="${H-PB+20}" text-anchor="middle" fill="#7b7c99" font-size="12">${lab}</text>
     <line x1="${X(h)}" y1="${PT}" x2="${X(h)}" y2="${H-PB}" stroke="rgba(255,255,255,.05)"/>`;
   }).join('');
   $('clockBox').innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
     ${ticks}
     <line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="rgba(255,255,255,.2)"/>
-    <text x="${PL}" y="${PT-6}" fill="#a3a4c2" font-size="13" font-weight="700">Melatonin (the "it is night" signal)</text>
+    <text x="${PL}" y="${PT-14}" fill="#a3a4c2" font-size="13" font-weight="700">Melatonin (the "it is night" signal)</text>
     ${curve(0,'#a3a4c2','adultC')}
     ${curve(2,'#8b7bff','teenC')}
     <line id="schoolLine" x1="${X(30.5)}" y1="${PT}" x2="${X(30.5)}" y2="${H-PB}" stroke="#ffb020" stroke-width="2.5" stroke-dasharray="7 5" style="transition:all .7s"/>
-    <text id="schoolLbl" x="${X(30.5)+7}" y="${PT+16}" fill="#ffd784" font-size="13" font-weight="800" style="transition:all .7s">School starts</text>
-    <circle cx="${W-190}" cy="${PT+6}" r="5" fill="#a3a4c2"/><text x="${W-178}" y="${PT+11}" fill="#a3a4c2" font-size="13" font-weight="700">Adult / child</text>
-    <circle cx="${W-190}" cy="${PT+26}" r="5" fill="#8b7bff"/><text x="${W-178}" y="${PT+31}" fill="#c3b8ff" font-size="13" font-weight="700">Teenager</text>
+    <text id="schoolLbl" x="${clampX(X(30.5))}" y="${H-PB+42}" text-anchor="middle" fill="#ffd784" font-size="13" font-weight="800" style="transition:all .7s">School starts</text>
   </svg>`;
+  $('clockLegend').innerHTML = `
+    <span class="lg" style="pointer-events:none"><i style="background:#a3a4c2"></i>Adult / child</span>
+    <span class="lg" style="pointer-events:none"><i style="background:#8b7bff"></i>Teenager</span>
+    <span class="lg" style="pointer-events:none;border-style:dashed;border-color:#ffb020"><i style="background:#ffb020"></i>School start line</span>`;
   let late=false;
   $('schoolToggle').onclick=()=>{
     late=!late;
     const h= late?32:30.5;
     $('schoolLine').setAttribute('x1',X(h)); $('schoolLine').setAttribute('x2',X(h));
-    $('schoolLbl').setAttribute('x',X(h)+7);
+    $('schoolLbl').setAttribute('x',clampX(X(h)));
     $('schoolLbl').textContent = late?'10am start':'School starts';
     $('schoolToggle').textContent = late?'Back to an 8:30am start':'What if school started at 10am?';
     $('clockNote').innerHTML = late
@@ -1437,24 +1433,33 @@ INIT["Build the Wind-Down"] = ()=>{
 
 /* ---- 9. Crash test ---- */
 INIT["Crash Test"] = ()=>{
-  const W=740,H=340,PL=52,PR=22,PT=22,PB=44;
+  const W=740,H=366,PL=52,PR=22,PT=30,PB=68;
   const X=i=>PL+(i/(CURVE_HOURS.length-1))*(W-PL-PR);
   const Y=v=>PT+(1-v/100)*(H-PT-PB);
-  const grid=CURVE_HOURS.map((h,i)=>`<text x="${X(i)}" y="${H-18}" text-anchor="middle" fill="#7b7c99" font-size="11">${h}</text>
+  const grid=CURVE_HOURS.map((h,i)=>`<text x="${X(i)}" y="${H-PB+20}" text-anchor="middle" fill="#7b7c99" font-size="11">${h}</text>
     <line x1="${X(i)}" y1="${PT}" x2="${X(i)}" y2="${H-PB}" stroke="rgba(255,255,255,.05)"/>`).join('');
   const paths=BREAKFASTS.map((b,i)=>{
     const d=b.pts.map((p,j)=>(j?'L':'M')+X(j).toFixed(1)+','+Y(p).toFixed(1)).join(' ');
     return `<path class="curve hide" id="cv${i}" d="${d}" fill="none" stroke="${b.c}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
   }).join('');
+  // recess (10:30, halfway between the 10am and 11am ticks) and lunch (1pm, index 6) are baked into every
+  // curve so the chart isolates what breakfast alone contributes. Mark both, labelled below the axis.
+  const recessX=X(3.5), lunchX=X(6);
+  const meals=`
+    <line x1="${recessX}" y1="${PT}" x2="${recessX}" y2="${H-PB}" stroke="rgba(255,176,32,.35)" stroke-width="1.5" stroke-dasharray="3 4"/>
+    <line x1="${lunchX}" y1="${PT}" x2="${lunchX}" y2="${H-PB}" stroke="rgba(255,176,32,.35)" stroke-width="1.5" stroke-dasharray="3 4"/>
+    <text x="${recessX}" y="${H-PB+40}" text-anchor="middle" fill="#ffb020" font-size="11" font-weight="800" letter-spacing="1">RECESS</text>
+    <text x="${lunchX}" y="${H-PB+40}" text-anchor="middle" fill="#ffb020" font-size="11" font-weight="800" letter-spacing="1">LUNCH</text>`;
   $('curveBox').innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
     ${grid}
     <line x1="${PL}" y1="${Y(58)}" x2="${W-PR}" y2="${Y(58)}" stroke="rgba(255,255,255,.22)" stroke-dasharray="5 5"/>
     <text x="${W-PR}" y="${Y(58)-7}" text-anchor="end" fill="#7b7c99" font-size="11">where you started</text>
     <rect x="${X(5)}" y="${PT}" width="${X(7)-X(5)}" height="${H-PT-PB}" fill="rgba(255,92,122,.07)"/>
     <text x="${(X(5)+X(7))/2}" y="${PT+15}" text-anchor="middle" fill="#ff8fa3" font-size="11" font-weight="700">periods 3 &amp; 4</text>
-    <text x="${PL}" y="${PT-6}" fill="#a3a4c2" font-size="12" font-weight="700">Steady focus and energy &rarr;</text>
+    <text x="${PL}" y="${PT-10}" fill="#a3a4c2" font-size="12" font-weight="700">Steady focus and energy &rarr;</text>
     <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="rgba(255,255,255,.2)"/>
     <line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="rgba(255,255,255,.2)"/>
+    ${meals}
     ${paths}</svg>`;
   $('breakfastList').innerHTML=BREAKFASTS.map((b,i)=>
     `<button class="tile" data-i="${i}"><span class="pick">&#10003;</span>
@@ -1548,7 +1553,7 @@ INIT["Fuel Build Challenge"] = ()=>{
 
 /* ---- 12. Loop ---- */
 INIT["The Domino Effect"] = ()=>{
-  const W=560,H=380,cx=280,cy=190,r=125;
+  const W=640,H=540,cx=320,cy=270,r=158,nodeR=32;
   const nodes=[
     {t:"Short sleep",s:"under 8 hours"},
     {t:"Hunger hormones shift",s:"ghrelin up, leptin down"},
@@ -1560,22 +1565,39 @@ INIT["The Domino Effect"] = ()=>{
   const ang=i=>(-90+i*60)*Math.PI/180;
   let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
   for(let i=0;i<6;i++){
-    const a1=ang(i)+.34, a2=ang(i+1)-.34;
+    const a1=ang(i)+.4, a2=ang(i+1)-.4;
     svg+=`<path class="loopArc" id="arc${i}" d="M${(cx+r*Math.cos(a1)).toFixed(1)},${(cy+r*Math.sin(a1)).toFixed(1)} A${r},${r} 0 0 1 ${(cx+r*Math.cos(a2)).toFixed(1)},${(cy+r*Math.sin(a2)).toFixed(1)}" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="3" marker-end="url(#ah)"/>`;
   }
   svg+=`<defs><marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="rgba(255,255,255,.4)"/></marker></defs>`;
+  // Each node's label is placed radially OUTSIDE the ring (away from the centre), never
+  // stacked straight down, so it can't cross a neighbouring arc. Node 0 sits at the very
+  // top, so "outward" for it means upward, not downward toward the centre text.
+  const layout=[
+    {dir:'up',    anchor:'middle'},   // 0 top
+    {dir:'side',  anchor:'start'},    // 1 upper right
+    {dir:'side',  anchor:'start'},    // 2 lower right
+    {dir:'down',  anchor:'middle'},   // 3 bottom
+    {dir:'side',  anchor:'end'},      // 4 lower left
+    {dir:'side',  anchor:'end'}       // 5 upper left
+  ];
   nodes.forEach((n,i)=>{
     const x=cx+r*Math.cos(ang(i)), y=cy+r*Math.sin(ang(i));
-    const lines=n.t.split('\n');
+    const lines=n.t.split('\n').concat(n.s?[n.s]:[]);
+    const subFrom=n.t.split('\n').length; // index at which the subtitle line starts (styled lighter)
+    const L=layout[i];
+    let tx=x, lineY;
+    if(L.dir==='down'){ const top=y+nodeR+20; lineY=k=>top+k*15; }
+    else if(L.dir==='up'){ const bottom=y-nodeR-12; const top=bottom-(lines.length-1)*15; lineY=k=>top+k*15; }
+    else { tx = x + (L.anchor==='start'? nodeR+16 : -(nodeR+16)); const top=y-((lines.length-1)*15)/2; lineY=k=>top+k*15; }
+    const rows=lines.map((l,k)=>`<text x="${tx.toFixed(1)}" y="${lineY(k).toFixed(1)}" text-anchor="${L.anchor}" font-size="${k>=subFrom?11:12.5}" font-weight="${k>=subFrom?600:700}" fill="${k>=subFrom?'#a3a4c2':'#dedff0'}">${l}</text>`).join('');
     svg+=`<g class="loopNode" id="ln${i}" opacity=".35" style="transition:opacity .4s">
-      <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="34" fill="${i===0?'rgba(139,123,255,.3)':'rgba(255,255,255,.08)'}" stroke="${i===0?'#8b7bff':'rgba(255,255,255,.22)'}" stroke-width="2"/>
-      <text x="${x.toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="middle" font-size="15" font-weight="800" fill="#f2f2fa">${i+1}</text>
-      ${lines.map((l,k)=>`<text x="${x.toFixed(1)}" y="${(y+52+k*15).toFixed(1)}" text-anchor="middle" font-size="12.5" font-weight="700" fill="#dedff0">${l}</text>`).join('')}
-      ${n.s?`<text x="${x.toFixed(1)}" y="${(y+52+lines.length*15).toFixed(1)}" text-anchor="middle" font-size="11" fill="#a3a4c2">${n.s}</text>`:''}
+      <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${nodeR}" fill="${i===0?'rgba(139,123,255,.3)':'rgba(255,255,255,.08)'}" stroke="${i===0?'#8b7bff':'rgba(255,255,255,.22)'}" stroke-width="2"/>
+      <text x="${x.toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="middle" font-size="15" font-weight="800" fill="#f2f2fa">${i+1}</text>
+      ${rows}
     </g>`;
   });
-  svg+=`<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="15" font-weight="850" fill="#a3a4c2">THE LOOP</text>
-        <text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="12" fill="#7b7c99">it feeds itself</text></svg>`;
+  svg+=`<text x="${cx}" y="${cy-5}" text-anchor="middle" font-size="12" font-weight="850" fill="#a3a4c2" letter-spacing="1.5">THE LOOP</text>
+        <text x="${cx}" y="${cy+11}" text-anchor="middle" font-size="10.5" fill="#7b7c99">it feeds itself</text></svg>`;
   $('loopBox').innerHTML=svg;
   $('loopRun').onclick=()=>{
     document.querySelectorAll('#loopBox .loopNode').forEach(n=>n.setAttribute('opacity','.2'));
